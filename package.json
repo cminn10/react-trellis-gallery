@@ -1,0 +1,64 @@
+{
+	"name": "react-trellis-gallery",
+	"version": "0.1.0",
+	"description": "High-performance trellis/gallery layout for React",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"workspaces": [
+		"examples/*"
+	],
+	"license": "MIT",
+	"homepage": "https://cminn10.github.io/react-trellis-gallery/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cminn10/react-trellis-gallery.git"
+	},
+	"keywords": [
+		"react",
+		"trellis",
+		"gallery",
+		"grid",
+		"layout",
+		"masonry",
+		"virtualized"
+	],
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsdown",
+		"check": "biome check --write .",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"typecheck": "tsc --noEmit",
+		"dev:playground": "bun run --cwd examples/playground dev"
+	},
+	"dependencies": {
+		"@zag-js/floating-panel": "1.35.3",
+		"@zag-js/react": "1.35.3",
+		"react-window": "2.2.7"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.5",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4",
+		"tsdown": "^0.20.3",
+		"typescript": "^5.9.3"
+	},
+	"peerDependencies": {
+		"react": ">=18",
+		"react-dom": ">=18"
+	}
+}

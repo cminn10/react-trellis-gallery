@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish-tag-release:
+    name: Publish npm, tag, and GitHub release
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build library
+        run: bun run build
+
+      - name: Publish package (idempotent on existing version)
+        run: |
+          PACKAGE_NAME="$(bun -e "const pkg = JSON.parse(await Bun.file('./package.json').text()); console.log(pkg.name)")"
+          PACKAGE_VERSION="$(bun -e "const pkg = JSON.parse(await Bun.file('./package.json').text()); console.log(pkg.version)")"
+
+          if npm publish --access public; then
+            echo "::notice::Published ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+          elif npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version > /dev/null 2>&1; then
+            echo "::notice::${PACKAGE_NAME}@${PACKAGE_VERSION} already exists on npm; continuing."
+          else
+            echo "::error::npm publish failed for an unexpected reason."
+            exit 1
+          fi
+
+      - name: Create tag if missing and ensure it is pushed
+        run: |
+          TAG="v$(bun -e "const pkg = JSON.parse(await Bun.file('./package.json').text()); console.log(pkg.version)")"
+
+          if [ -z "$(git ls-remote --tags origin "refs/tags/${TAG}")" ]; then
+            git tag "${TAG}"
+            git push origin "${TAG}"
+            echo "::notice::Created and pushed tag ${TAG}"
+          else
+            echo "::notice::Tag ${TAG} already exists on origin; continuing."
+          fi
+
+      - name: Create GitHub release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(bun -e "const pkg = JSON.parse(await Bun.file('./package.json').text()); console.log(pkg.version)")"
+
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            echo "::notice::GitHub release ${TAG} already exists; continuing."
+          else
+            gh release create "${TAG}" --generate-notes
+            echo "::notice::Created GitHub release ${TAG}"
+          fi
