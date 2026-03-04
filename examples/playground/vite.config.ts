@@ -6,10 +6,11 @@ import { defineConfig } from 'vite'
 export default defineConfig({
 	plugins: [react()],
 	resolve: {
-		alias: process.env.CI
-			? undefined
-			: {
-					'react-trellis-gallery': resolve(__dirname, '../../src'),
-				},
+		alias: {
+			'react-trellis-gallery': resolve(
+				__dirname,
+				process.env.CI ? '../../dist' : '../../src',
+			),
+		},
 	},
 })
