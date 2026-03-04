@@ -1,8 +1,21 @@
 import type { ReactNode } from 'react'
 
-import type { LayoutResult, PaginationAlign, PaginationPosition, TrellisMode } from 'react-trellis-gallery'
+import type {
+	GoToItemResult,
+	LayoutResult,
+	PaginationAlign,
+	PaginationPosition,
+	TrellisMode,
+} from 'react-trellis-gallery'
 
-import type { LayoutType, PaginationRenderMode, PlaygroundControls, PlaygroundSetters } from './use-playground-state'
+import type {
+	LayoutType,
+	PaginationRenderMode,
+	PlaygroundControls,
+	PlaygroundSetters,
+	SearchField,
+	SearchOperator,
+} from './use-playground-state'
 
 interface ControlPanelProps {
 	controls: PlaygroundControls
@@ -13,6 +26,9 @@ interface ControlPanelProps {
 	onOpenItem1: () => void
 	onOpenFirst3: () => void
 	onCloseAll: () => void
+	onGoToItem: (field: SearchField, operator: SearchOperator, value: string, duration: number) => void
+	onClearHighlights: () => void
+	searchResult: GoToItemResult | null
 }
 
 interface SectionProps {
@@ -163,6 +179,34 @@ const paginationAlignOptions: SelectOption<PaginationAlign>[] = [
 	{ value: 'end', label: 'Right' },
 ]
 
+const searchFieldOptions: SelectOption<SearchField>[] = [
+	{ value: 'label', label: 'Label' },
+	{ value: 'id', label: 'ID' },
+	{ value: 'description', label: 'Description' },
+	{ value: 'category', label: 'Category' },
+	{ value: 'createdAt', label: 'Created At' },
+]
+
+const stringOperatorOptions: SelectOption<SearchOperator>[] = [
+	{ value: 'contains', label: 'Contains' },
+	{ value: 'equals', label: 'Equals' },
+	{ value: 'startsWith', label: 'Starts with' },
+]
+
+const numberOperatorOptions: SelectOption<SearchOperator>[] = [
+	{ value: 'eq', label: '=' },
+	{ value: 'gt', label: '>' },
+	{ value: 'lt', label: '<' },
+	{ value: 'gte', label: '>=' },
+	{ value: 'lte', label: '<=' },
+]
+
+const dateOperatorOptions: SelectOption<SearchOperator>[] = [
+	{ value: 'before', label: 'Before' },
+	{ value: 'after', label: 'After' },
+	{ value: 'on', label: 'On' },
+]
+
 export function ControlPanel({
 	controls,
 	setters,
@@ -172,10 +216,19 @@ export function ControlPanel({
 	onOpenItem1,
 	onOpenFirst3,
 	onCloseAll,
+	onGoToItem,
+	onClearHighlights,
+	searchResult,
 }: ControlPanelProps) {
 	const hasExternalPages = layoutInfo.totalPages > 0
 	const externalPageDisplay = hasExternalPages ? controls.externalPage + 1 : 0
 	const externalOnly = controls.paginationRenderMode === 'hidden'
+	const searchOperatorOptions =
+		controls.searchField === 'id'
+			? numberOperatorOptions
+			: controls.searchField === 'createdAt'
+				? dateOperatorOptions
+				: stringOperatorOptions
 
 	return (
 		<aside className="control-panel">
@@ -326,6 +379,77 @@ export function ControlPanel({
 					</button>
 				</div>
 				<CheckboxField label="Indicator" checked={indicatorEnabled} onChange={onIndicatorChange} />
+			</Section>
+
+			<Section title="Go To Item">
+				<label className="control-row">
+					<span>Highlight color</span>
+					<input
+						type="color"
+						value={controls.highlightColor}
+						onChange={(event) => {
+							setters.setHighlightColor(event.target.value)
+						}}
+					/>
+				</label>
+				<SelectField
+					label="Field"
+					value={controls.searchField}
+					options={searchFieldOptions}
+					onChange={(nextField) => {
+						setters.setSearchField(nextField)
+						if (nextField === 'id') {
+							setters.setSearchOperator('eq')
+							return
+						}
+						if (nextField === 'createdAt') {
+							setters.setSearchOperator('on')
+							return
+						}
+						setters.setSearchOperator('contains')
+					}}
+				/>
+				<SelectField
+					label="Operator"
+					value={controls.searchOperator}
+					options={searchOperatorOptions}
+					onChange={setters.setSearchOperator}
+				/>
+				<TextField
+					label="Value"
+					value={controls.searchValue}
+					placeholder={controls.searchField === 'createdAt' ? 'YYYY-MM-DD' : 'Search value'}
+					onChange={setters.setSearchValue}
+				/>
+				<NumberField
+					label="Duration (ms)"
+					value={controls.searchDuration}
+					min={0}
+					max={60000}
+					step={100}
+					onChange={setters.setSearchDuration}
+				/>
+				<div className="panel-control-actions">
+					<button
+						className="external-nav-button panel-action-button"
+						type="button"
+						onClick={() => {
+							onGoToItem(controls.searchField, controls.searchOperator, controls.searchValue, controls.searchDuration)
+						}}
+					>
+						Go
+					</button>
+					<button className="external-nav-button panel-action-button" type="button" onClick={onClearHighlights}>
+						Clear
+					</button>
+				</div>
+				{searchResult ? (
+					<div className="info-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 4 }}>
+						<strong>{searchResult.found ? `${searchResult.matchCount} matches` : 'No matches'}</strong>
+						<span>{`Page: ${searchResult.page + 1}`}</span>
+						<span>{`Target index: ${searchResult.targetIndex}`}</span>
+					</div>
+				) : null}
 			</Section>
 
 			<Section title="Container">

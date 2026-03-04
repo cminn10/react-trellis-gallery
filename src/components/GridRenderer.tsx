@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, ReactNode, RefObject } from 'react'
+import type { GridImperativeAPI } from 'react-window'
 import { useTrellisPaginationContext } from '../context/trellis-pagination-context'
 import { DEFAULT_GAP, DEFAULT_OVERSCAN_COUNT } from '../core/constants'
 import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult, TrellisMode } from '../core/types'
@@ -17,6 +18,10 @@ export interface GridRendererProps<T> {
 	overscanCount?: number
 	className?: string
 	style?: CSSProperties
+	highlightedIndices: ReadonlySet<number>
+	highlightClassName?: string
+	highlightEpoch: number
+	gridRef: RefObject<GridImperativeAPI | null>
 }
 
 export function GridRenderer<T>({
@@ -31,6 +36,10 @@ export function GridRenderer<T>({
 	overscanCount = DEFAULT_OVERSCAN_COUNT,
 	className,
 	style,
+	highlightedIndices,
+	highlightClassName,
+	highlightEpoch,
+	gridRef,
 }: GridRendererProps<T>) {
 	const pagination = useTrellisPaginationContext()
 
@@ -44,6 +53,8 @@ export function GridRenderer<T>({
 				layout={layout}
 				onCellActivate={onCellActivate}
 				activationPredicate={activationPredicate}
+				highlightClassName={highlightClassName}
+				highlightedIndices={highlightedIndices}
 				indicatorConfig={indicatorConfig}
 				renderItem={renderItem}
 				startIndex={pagination.startIndex}
@@ -60,6 +71,10 @@ export function GridRenderer<T>({
 			layout={layout}
 			onCellActivate={onCellActivate}
 			activationPredicate={activationPredicate}
+			gridRef={gridRef}
+			highlightClassName={highlightClassName}
+			highlightEpoch={highlightEpoch}
+			highlightedIndices={highlightedIndices}
 			indicatorConfig={indicatorConfig}
 			overscanCount={overscanCount}
 			renderItem={renderItem}

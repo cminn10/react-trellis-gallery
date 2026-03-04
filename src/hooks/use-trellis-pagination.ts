@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { LayoutResult, PaginationConfig, PaginationVM } from '../core/types'
-
-function clampPage(page: number, totalPages: number): number {
-	if (totalPages <= 0) return 0
-	return Math.min(Math.max(0, page), totalPages - 1)
-}
+import { clampPage } from '../core/utils'
 
 export function useTrellisPagination(
 	layout: LayoutResult,

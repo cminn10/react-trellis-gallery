@@ -20,6 +20,7 @@ High-performance trellis/gallery layout for React with paginated grids, virtuali
 - **Controlled & uncontrolled pagination** — manage page state externally or let the component handle it
 - **Custom pagination UI** — provide your own render function, use the built-in default, or hide controls entirely
 - **Draggable pagination overlay** — reposition the pagination bar by dragging
+- **Go to item by predicate** — navigate to and highlight items matching a predicate across pages or in scroll mode, with configurable highlight color and auto-clear duration
 - **Keyboard accessible** — corner trigger is keyboard-focusable; custom activation predicates can include keyboard combos
 - **SSR-safe** — uses isomorphic layout effects for server-side rendering compatibility
 - **Fully typed** — written in TypeScript with all types exported
@@ -229,6 +230,69 @@ function GalleryWithExternalActions({ items }) {
 }
 ```
 
+### Go To Item by Predicate
+
+Navigate to and highlight items that match a predicate. Works in both pagination and scroll modes.
+
+**Imperative** — call `goToItem` on the ref handle:
+
+```tsx
+import { useRef } from 'react'
+import { TrellisGallery, type TrellisGalleryHandle } from 'react-trellis-gallery'
+
+function SearchableGallery({ items }) {
+  const galleryRef = useRef<TrellisGalleryHandle<typeof items[number]> | null>(null)
+
+  const handleSearch = (query: string) => {
+    const result = galleryRef.current?.goToItem(
+      (item) => item.title.toLowerCase().includes(query.toLowerCase()),
+      { highlightDuration: 5000 },
+    )
+    console.log(result) // { found, page, matchCount, matchIndices, targetIndex }
+  }
+
+  return (
+    <>
+      <input onChange={(e) => handleSearch(e.target.value)} placeholder="Search..." />
+      <button onClick={() => galleryRef.current?.clearHighlights()}>Clear</button>
+      <TrellisGallery ref={galleryRef} items={items} {...otherProps} />
+    </>
+  )
+}
+```
+
+**Declarative** — pass a `highlightPredicate` prop:
+
+```tsx
+const [filter, setFilter] = useState('')
+
+<TrellisGallery
+  items={items}
+  highlightPredicate={filter ? (item) => item.category === filter : undefined}
+  highlightColor="#e63946"
+  highlightDuration={0} // 0 = no auto-clear
+  {...otherProps}
+/>
+```
+
+**Customizing the highlight appearance:**
+
+```tsx
+<TrellisGallery
+  highlightColor="#10b981"
+  highlightClassName="my-highlight"
+  {...otherProps}
+/>
+```
+
+You can also override the CSS custom properties or target the `data-rtg-highlighted` attribute directly:
+
+```css
+[data-rtg-cell][data-rtg-highlighted]::before {
+  box-shadow: 0 0 0 3px hotpink;
+}
+```
+
 ### Headless Usage
 
 Use the hooks directly for full control over rendering:
@@ -298,7 +362,11 @@ The main component. Renders a grid with optional pagination and floating panels.
 | `onPanelClose` | `(item: T, index: number) => void` | — | Called when a panel closes |
 | `cellIndicator` | `false \| CellIndicatorConfig` | Enabled | Shows per-cell border + corner triangle trigger; pass `false` to disable |
 | `cellActivation` | `(event: CellActivationEvent) => boolean` | — | Optional predicate to open panels from custom click/double-click/keyboard combos |
-| `ref` | `Ref<TrellisGalleryHandle<T>>` | — | Imperative panel control (`open`, `close`, `isOpen` by predicate) |
+| `highlightColor` | `string` | `'#0078d4'` | CSS color for the highlight border |
+| `highlightDuration` | `number` | `3600` | Auto-clear delay in ms. `0` = keep indefinitely |
+| `highlightPredicate` | `(item: T) => boolean` | — | Declarative highlight — items matching the predicate are highlighted and the view navigates to the first match |
+| `highlightClassName` | `string` | — | Additional CSS class applied to highlighted cells |
+| `ref` | `Ref<TrellisGalleryHandle<T>>` | — | Imperative handle for panels and go-to-item |
 | `className` | `string` | — | CSS class for the container |
 | `style` | `CSSProperties` | — | Inline styles for the container |
 
@@ -326,6 +394,29 @@ Exposed from `ref` on `<TrellisGallery>`:
     isOpen(predicate: (item: T) => boolean): boolean
     openPanels: PanelState[]
   }
+  goToItem(predicate: (item: T) => boolean, options?: GoToItemOptions): GoToItemResult
+  clearHighlights(): void
+}
+```
+
+### GoToItemOptions
+
+```ts
+{
+  highlightDuration?: number  // ms before auto-clear. 0 = keep indefinitely. Overrides the component prop.
+  target?: 'first' | 'last' | number  // which match to navigate to (default: 'first')
+}
+```
+
+### GoToItemResult
+
+```ts
+{
+  found: boolean        // whether any items matched
+  page: number          // page index of the target item
+  matchIndices: number[] // indices of all matching items
+  matchCount: number    // total number of matches
+  targetIndex: number   // index of the item navigated to (-1 if not found)
 }
 ```
 
@@ -424,6 +515,7 @@ Returned by `useTrellisPanels()` and available on `useTrellisGallery().panels`:
 | `useTrellisLayout(containerSize, itemCount, config, gap?)` | Computes grid layout from container dimensions |
 | `useTrellisPagination(layout, totalItems, config)` | Manages pagination state and navigation |
 | `useTrellisPanels(callbacks?)` | Manages floating panel open/close/pin state |
+| `useTrellisHighlight(options)` | Manages highlight state, match scanning, navigation, and auto-clear. Accepts `items`, `itemsPerPage`, `navigate`, `highlightPredicate`, and `defaultDuration`. |
 | `useCellInteraction({ onActivate, activationPredicate })` | Returns cell props for optional activation. When `activationPredicate` is omitted it returns an empty prop object. |
 | `useContainerSize(ref)` | Tracks element dimensions via ResizeObserver |
 | `useTrellisPaginationContext()` | Reads pagination state from context (for child components of `TrellisGallery`) |
@@ -434,6 +526,17 @@ Returned by `useTrellisPanels()` and available on `useTrellisGallery().panels`:
 | --- | --- |
 | `calculateLayout(width, height, itemCount, config, gap)` | Pure function that computes grid layout. Returns `LayoutResult` with `rows`, `cols`, `cellWidth`, `cellHeight`, `itemsPerPage`, `totalPages`. |
 | `fitGrid(itemCount, maxRows, maxCols)` | Finds the smallest grid (rows × cols) that fits `itemCount` items within bounds. Prefers fewer rows, then fewer columns. |
+| `clampPage(page, totalPages)` | Clamps a page index to the valid range `[0, totalPages - 1]`. |
+
+## CSS Custom Properties
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `--rtg-border-radius` | `10px` | Border radius for cells and highlight |
+| `--rtg-highlight-color` | `#0078d4` | Highlight border color (also settable via `highlightColor` prop) |
+| `--rtg-highlight-duration-ms` | `1200ms` | CSS transition speed for the highlight fade in/out |
+| `--rtg-cell-border-color` | `rgba(0, 0, 0, 0.15)` | Hover border color on cells |
+| `--rtg-overlay-gradient-start` | `rgba(0, 0, 0, 0.15)` | Pagination overlay gradient start color |
 
 ## Browser Support
 

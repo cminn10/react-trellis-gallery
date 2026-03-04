@@ -1,4 +1,5 @@
-import { memo, useCallback, useImperativeHandle, useMemo } from 'react'
+import { type CSSProperties, memo, useCallback, useImperativeHandle, useMemo } from 'react'
+import { useGridRef } from 'react-window'
 import { TrellisPaginationProvider } from '../context/trellis-pagination-context'
 import {
 	DEFAULT_CELL_INDICATOR,
@@ -9,40 +10,64 @@ import {
 } from '../core/constants'
 import type { TrellisGalleryHandle, TrellisGalleryProps } from '../core/types'
 import { useTrellisGallery } from '../hooks/use-trellis-gallery'
+import { useTrellisHighlight } from '../hooks/use-trellis-highlight'
 import { DefaultPagination } from './DefaultPagination'
 import { GridRenderer } from './GridRenderer'
 import { OverlayManager } from './OverlayManager'
 import { PaginationOverlay } from './PaginationOverlay'
 
 const MemoizedOverlayManager = memo(OverlayManager) as typeof OverlayManager
+const RTG_HIGHLIGHT_COLOR = 'var(--rtg-highlight-color, #0078d4)'
+const RTG_HIGHLIGHT_DURATION = 'var(--rtg-highlight-duration-ms, 1200ms)'
+const RTG_HIGHLIGHT_EASING = 'ease-in-out'
+const RTG_BORDER_RADIUS = 'var(--rtg-border-radius, 10px)'
+const RTG_CELL_BORDER_COLOR = 'var(--rtg-cell-border-color, rgba(0, 0, 0, 0.15))'
+const RTG_CELL_BORDER_COLOR_ACTIVE = 'var(--rtg-cell-border-color, rgba(0, 0, 0, 0.25))'
 const CELL_INTERACTION_STYLES = `
 [data-rtg-cell] { position: relative; isolation: isolate; }
+[data-rtg-cell]::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: ${RTG_BORDER_RADIUS};
+	pointer-events: none;
+	opacity: 0;
+	box-shadow: 0 0 0 2px ${RTG_HIGHLIGHT_COLOR};
+	transition: opacity ${RTG_HIGHLIGHT_DURATION} ${RTG_HIGHLIGHT_EASING};
+	z-index: 1;
+}
 [data-rtg-cell]::after {
 	content: '';
 	position: absolute;
 	inset: 0;
-	border: 1px solid var(--rtg-cell-border-color, rgba(0, 0, 0, 0.15));
-	border-radius: var(--rtg-border-radius, 10px);
+	border: 1px solid ${RTG_CELL_BORDER_COLOR};
+	border-radius: ${RTG_BORDER_RADIUS};
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 150ms ease;
-	z-index: 1;
+	z-index: 2;
 }
 [data-rtg-cell] [data-rtg-indicator-trigger] {
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 150ms ease;
-	z-index: 2;
+	z-index: 3;
 }
 [data-rtg-cell]:hover [data-rtg-indicator-trigger],
 [data-rtg-cell]:focus-within [data-rtg-indicator-trigger] { opacity: 1; pointer-events: auto; }
 [data-rtg-cell] [data-rtg-indicator-trigger]:hover,
 [data-rtg-cell] [data-rtg-indicator-trigger]:focus-visible {
 	filter: contrast(1.08) saturate(1.08);
-	border-color: var(--rtg-cell-border-color, rgba(0, 0, 0, 0.25));
+	border-color: ${RTG_CELL_BORDER_COLOR_ACTIVE};
 }
 [data-rtg-cell]:hover::after,
 [data-rtg-cell]:focus-within::after { opacity: 1; }
+[data-rtg-cell][data-rtg-highlighted]::before {
+	opacity: 1;
+}
+[data-rtg-cell][data-rtg-highlighted]::after {
+	opacity: 0 !important;
+}
 `
 
 export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
@@ -54,6 +79,7 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 	const paginationAlign = paginationConfig?.align ?? DEFAULT_PAGINATION_ALIGN
 	const paginationDraggable = paginationConfig?.draggable ?? false
 	const paginationLabel = paginationConfig?.label
+	const gridRef = useGridRef(null)
 	const resolvedIndicatorConfig = useMemo(() => {
 		if (props.cellIndicator === false) return false
 		return props.cellIndicator ?? DEFAULT_CELL_INDICATOR
@@ -85,6 +111,37 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 		pagination: paginationConfig ?? undefined,
 		onPanelOpen,
 		onPanelClose,
+	})
+	const navigateToIndex = useCallback(
+		(targetIndex: number) => {
+			if (pagination.enabled) {
+				if (pagination.itemsPerPage <= 0) {
+					pagination.goToPage(0)
+					return
+				}
+
+				const page = Math.floor(targetIndex / pagination.itemsPerPage)
+				pagination.goToPage(page)
+				return
+			}
+
+			const cols = Math.max(1, layout.cols)
+			gridRef.current?.scrollToCell({
+				rowIndex: Math.floor(targetIndex / cols),
+				columnIndex: targetIndex % cols,
+				rowAlign: 'center',
+				columnAlign: 'center',
+				behavior: 'smooth',
+			})
+		},
+		[gridRef, layout.cols, pagination.enabled, pagination.goToPage, pagination.itemsPerPage],
+	)
+	const highlight = useTrellisHighlight<T>({
+		items: props.items,
+		itemsPerPage: pagination.itemsPerPage,
+		navigate: navigateToIndex,
+		highlightPredicate: props.highlightPredicate,
+		defaultDuration: props.highlightDuration,
 	})
 	const openPanelsByPredicate = useCallback(
 		(predicate: (item: T) => boolean) => {
@@ -125,9 +182,13 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 				isOpen: isAnyPanelOpenByPredicate,
 				openPanels: panels.openPanels,
 			},
+			goToItem: highlight.goToItem,
+			clearHighlights: highlight.clearHighlights,
 		}),
 		[
 			closePanelsByPredicate,
+			highlight.clearHighlights,
+			highlight.goToItem,
 			isAnyPanelOpenByPredicate,
 			openPanelsByPredicate,
 			panels.closeAll,
@@ -142,18 +203,25 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 			<div
 				ref={containerRef}
 				className={props.className}
-				style={{
-					position: 'relative',
-					width: '100%',
-					height: '100%',
-					overflow: 'hidden',
-					...props.style,
-				}}
+				style={
+					{
+						position: 'relative',
+						width: '100%',
+						height: '100%',
+						overflow: 'hidden',
+						...(props.highlightColor !== undefined && { '--rtg-highlight-color': props.highlightColor }),
+						...props.style,
+					} as CSSProperties
+				}
 			>
 				<style data-rtg-styles>{CELL_INTERACTION_STYLES}</style>
 
 				<GridRenderer
 					activationPredicate={props.cellActivation}
+					gridRef={gridRef}
+					highlightClassName={props.highlightClassName}
+					highlightEpoch={highlight.highlightEpoch}
+					highlightedIndices={highlight.highlightedIndices}
 					indicatorConfig={resolvedIndicatorConfig}
 					items={props.items}
 					layout={layout}

@@ -130,6 +130,20 @@ export interface CellIndicatorConfig {
 export type CellActivationEvent = MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
 export type CellActivationPredicate = (event: CellActivationEvent) => boolean
 
+export interface GoToItemOptions {
+	/** Auto-clear delay in ms. `0` = keep indefinitely. Overrides the component-level `highlightDuration` prop. */
+	highlightDuration?: number
+	target?: 'first' | 'last' | number
+}
+
+export interface GoToItemResult {
+	found: boolean
+	page: number
+	matchIndices: number[]
+	matchCount: number
+	targetIndex: number
+}
+
 export interface TrellisGalleryHandle<T> {
 	panels: {
 		open: (predicate: (item: T) => boolean) => void
@@ -139,6 +153,8 @@ export interface TrellisGalleryHandle<T> {
 		isOpen: (predicate: (item: T) => boolean) => boolean
 		openPanels: PanelState[]
 	}
+	goToItem: (predicate: (item: T) => boolean, options?: GoToItemOptions) => GoToItemResult
+	clearHighlights: () => void
 }
 
 export interface TrellisGalleryBaseProps<T> {
@@ -157,6 +173,12 @@ export interface TrellisGalleryBaseProps<T> {
 	onPanelClose?: (item: T, index: number) => void
 	cellIndicator?: false | CellIndicatorConfig
 	cellActivation?: CellActivationPredicate
+	/** CSS color for the highlight border. Defaults to `#0078d4`. */
+	highlightColor?: string
+	/** Auto-clear delay in ms. `0` = keep indefinitely. Defaults to 3600ms. */
+	highlightDuration?: number
+	highlightPredicate?: (item: T) => boolean
+	highlightClassName?: string
 	ref?: Ref<TrellisGalleryHandle<T>>
 }
 

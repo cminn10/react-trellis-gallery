@@ -1,9 +1,11 @@
-import type { CSSProperties, ReactElement, ReactNode } from 'react'
-import { memo, useMemo } from 'react'
-import { type CellComponentProps, Grid, useGridRef } from 'react-window'
+import type { CSSProperties, ReactElement, ReactNode, RefObject } from 'react'
+import { memo, useMemo, useRef } from 'react'
+import { type CellComponentProps, Grid, type GridImperativeAPI } from 'react-window'
 
 import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult } from '../core/types'
 import { CellContent } from './CellContent'
+
+const EMPTY_SET: ReadonlySet<number> = new Set()
 
 interface ScrollCellData {
 	items: unknown[]
@@ -15,6 +17,9 @@ interface ScrollCellData {
 	onCellActivate: (index: number) => void
 	activationPredicate?: CellActivationPredicate
 	indicatorConfig: false | CellIndicatorConfig
+	highlightSetRef: RefObject<ReadonlySet<number>>
+	highlightClassName?: string
+	highlightEpoch: number
 }
 
 function ScrollCellBase({
@@ -31,11 +36,14 @@ function ScrollCellBase({
 	onCellActivate,
 	activationPredicate,
 	indicatorConfig,
+	highlightSetRef,
+	highlightClassName,
 }: CellComponentProps<ScrollCellData>): ReactElement | null {
 	const index = rowIndex * cols + columnIndex
 	if (index >= itemCount) return null
 	const isLastColumn = columnIndex === cols - 1
 	const isLastRow = rowIndex === rowCount - 1
+	const isHighlighted = highlightSetRef.current.has(index)
 
 	return (
 		<div
@@ -51,8 +59,10 @@ function ScrollCellBase({
 		>
 			<CellContent
 				activationPredicate={activationPredicate}
+				highlightClassName={highlightClassName}
 				indicatorConfig={indicatorConfig}
 				index={index}
+				isHighlighted={isHighlighted}
 				item={items[index]}
 				onCellActivate={onCellActivate}
 				renderItem={renderItem}
@@ -74,6 +84,10 @@ export interface ScrollGridProps<T> {
 	onCellActivate: (index: number) => void
 	activationPredicate?: CellActivationPredicate
 	indicatorConfig: false | CellIndicatorConfig
+	gridRef: RefObject<GridImperativeAPI | null>
+	highlightedIndices: ReadonlySet<number>
+	highlightClassName?: string
+	highlightEpoch: number
 }
 
 export function ScrollGrid<T>({
@@ -87,9 +101,14 @@ export function ScrollGrid<T>({
 	onCellActivate,
 	activationPredicate,
 	indicatorConfig,
+	gridRef,
+	highlightedIndices,
+	highlightClassName,
+	highlightEpoch,
 }: ScrollGridProps<T>) {
-	const gridRef = useGridRef(null)
 	const resolvedGap = Math.max(0, gap)
+	const highlightSetRef = useRef<ReadonlySet<number>>(EMPTY_SET)
+	highlightSetRef.current = highlightedIndices
 
 	const cols = Math.max(1, layout.cols)
 	const rowCount = Math.ceil(items.length / cols)
@@ -104,8 +123,22 @@ export function ScrollGrid<T>({
 			onCellActivate,
 			activationPredicate,
 			indicatorConfig,
+			highlightSetRef,
+			highlightClassName,
+			highlightEpoch,
 		}),
-		[items, cols, rowCount, resolvedGap, renderItem, onCellActivate, activationPredicate, indicatorConfig],
+		[
+			items,
+			cols,
+			rowCount,
+			resolvedGap,
+			renderItem,
+			onCellActivate,
+			activationPredicate,
+			indicatorConfig,
+			highlightClassName,
+			highlightEpoch,
+		],
 	)
 	const columnWidth = useMemo(() => {
 		return (columnIndex: number) => layout.cellWidth + (columnIndex < cols - 1 ? resolvedGap : 0)

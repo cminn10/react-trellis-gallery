@@ -15,6 +15,8 @@ export interface PaginationGridProps<T> {
 	onCellActivate: (index: number) => void
 	activationPredicate?: CellActivationPredicate
 	indicatorConfig: false | CellIndicatorConfig
+	highlightedIndices: ReadonlySet<number>
+	highlightClassName?: string
 }
 
 export function PaginationGrid<T>({
@@ -29,6 +31,8 @@ export function PaginationGrid<T>({
 	onCellActivate,
 	activationPredicate,
 	indicatorConfig,
+	highlightedIndices,
+	highlightClassName,
 }: PaginationGridProps<T>) {
 	if (layout.itemsPerPage <= 0 || layout.cols <= 0 || layout.rows <= 0) return null
 
@@ -53,7 +57,9 @@ export function PaginationGrid<T>({
 				return (
 					<CellContent
 						activationPredicate={activationPredicate}
+						highlightClassName={highlightClassName}
 						indicatorConfig={indicatorConfig}
+						isHighlighted={highlightedIndices.has(itemIndex)}
 						key={itemIndex}
 						index={itemIndex}
 						item={item}

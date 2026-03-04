@@ -8,6 +8,7 @@ import type {
 
 export const DEFAULT_GAP = 0
 export const DEFAULT_OVERSCAN_COUNT = 1
+export const DEFAULT_HIGHLIGHT_DURATION = 3600
 export const PANEL_CASCADE_OFFSET = 24
 export const DEFAULT_TRIANGLE_SIZE = 20
 export const DEFAULT_PAGINATION_POSITION: PaginationPosition = 'bottom'

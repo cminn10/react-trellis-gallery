@@ -238,6 +238,31 @@ body {
 	font-variant-numeric: tabular-nums;
 }
 
+.top-links {
+	position: fixed;
+	top: 12px;
+	right: 16px;
+	z-index: 100;
+	display: flex;
+	gap: 4px;
+}
+
+.top-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	border-radius: calc(var(--radius) - 2px);
+	color: var(--muted-foreground);
+	transition: color 0.15s, background 0.15s;
+}
+
+.top-link:hover {
+	color: var(--foreground);
+	background: oklch(0.923 0.003 48.717 / 60%);
+}
+
 .preview-root {
 	display: flex;
 	align-items: center;

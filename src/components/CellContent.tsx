@@ -12,6 +12,8 @@ interface CellContentProps {
 	onCellActivate: (index: number) => void
 	activationPredicate?: CellActivationPredicate
 	indicatorConfig: false | CellIndicatorConfig
+	isHighlighted?: boolean
+	highlightClassName?: string
 }
 
 type CellStyleWithVars = CSSProperties & {
@@ -23,8 +25,14 @@ type CellStyleWithVars = CSSProperties & {
 const BASE_CELL_STYLE: CSSProperties = {
 	width: '100%',
 	height: '100%',
-	overflow: 'hidden',
+	overflow: 'visible',
 	background: 'transparent',
+}
+const CELL_CONTENT_STYLE: CSSProperties = {
+	width: '100%',
+	height: '100%',
+	overflow: 'hidden',
+	borderRadius: 'var(--rtg-border-radius, 10px)',
 }
 
 export const CellContent = memo(function CellContent({
@@ -34,6 +42,8 @@ export const CellContent = memo(function CellContent({
 	onCellActivate,
 	activationPredicate,
 	indicatorConfig,
+	isHighlighted = false,
+	highlightClassName,
 }: CellContentProps) {
 	const onActivate = useCallback(() => {
 		onCellActivate(index)
@@ -83,8 +93,14 @@ export const CellContent = memo(function CellContent({
 	)
 
 	return (
-		<div data-rtg-cell {...interactionProps} style={cellStyle}>
-			{renderItem(item, index)}
+		<div
+			data-rtg-cell
+			data-rtg-highlighted={isHighlighted ? '' : undefined}
+			className={isHighlighted ? highlightClassName : undefined}
+			{...interactionProps}
+			style={cellStyle}
+		>
+			<div style={CELL_CONTENT_STYLE}>{renderItem(item, index)}</div>
 			{indicatorConfig === false ? null : (
 				<button
 					aria-label="Open panel"

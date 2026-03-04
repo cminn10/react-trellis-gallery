@@ -2,6 +2,7 @@ import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
 	calculateLayout,
+	clampPage,
 	type LayoutConfig,
 	type PaginationAlign,
 	type PaginationConfig,
@@ -14,6 +15,11 @@ import { generateItems, type SampleItem } from './sample-items'
 
 export type LayoutType = 'auto' | 'manual'
 export type PaginationRenderMode = 'default' | 'custom' | 'hidden'
+export type SearchField = 'label' | 'id' | 'description' | 'category' | 'createdAt'
+export type StringOperator = 'contains' | 'equals' | 'startsWith'
+export type NumberOperator = 'eq' | 'gt' | 'lt' | 'gte' | 'lte'
+export type DateOperator = 'before' | 'after' | 'on'
+export type SearchOperator = StringOperator | NumberOperator | DateOperator
 
 export interface PlaygroundControls {
 	itemCount: number
@@ -33,6 +39,11 @@ export interface PlaygroundControls {
 	paginationLabel: string
 	externalControl: boolean
 	externalPage: number
+	searchField: SearchField
+	searchOperator: SearchOperator
+	searchValue: string
+	searchDuration: number
+	highlightColor: string
 }
 
 export interface PlaygroundSetters {
@@ -53,6 +64,11 @@ export interface PlaygroundSetters {
 	setPaginationLabel: (value: string) => void
 	setExternalControl: (value: boolean) => void
 	setExternalPage: (value: number) => void
+	setSearchField: (value: SearchField) => void
+	setSearchOperator: (value: SearchOperator) => void
+	setSearchValue: (value: string) => void
+	setSearchDuration: (value: number) => void
+	setHighlightColor: (value: string) => void
 }
 
 export interface PlaygroundState {
@@ -73,9 +89,81 @@ function clampInt(value: number, min: number, max: number): number {
 	return Math.floor(clamp(value, min, max))
 }
 
-function clampPage(page: number, totalPages: number): number {
-	if (totalPages <= 0) return 0
-	return clampInt(page, 0, totalPages - 1)
+function isValidDate(value: string): boolean {
+	return Number.isFinite(Date.parse(value))
+}
+
+function normalizeDate(value: Date): string {
+	return value.toISOString().slice(0, 10)
+}
+
+export function buildPredicate(
+	field: SearchField,
+	operator: SearchOperator,
+	value: string,
+): ((item: SampleItem) => boolean) | undefined {
+	const normalizedValue = value.trim()
+	if (normalizedValue.length === 0) return undefined
+
+	if (field === 'id') {
+		const target = Number(normalizedValue)
+		if (!Number.isFinite(target)) return undefined
+		switch (operator) {
+			case 'eq':
+				return (item) => item.id === target
+			case 'gt':
+				return (item) => item.id > target
+			case 'lt':
+				return (item) => item.id < target
+			case 'gte':
+				return (item) => item.id >= target
+			case 'lte':
+				return (item) => item.id <= target
+			default:
+				return undefined
+		}
+	}
+
+	if (field === 'createdAt') {
+		if (!isValidDate(normalizedValue)) return undefined
+		const targetDate = new Date(normalizedValue)
+		const targetDay = normalizeDate(targetDate)
+		switch (operator) {
+			case 'before':
+				return (item) => item.createdAt < targetDate
+			case 'after':
+				return (item) => item.createdAt > targetDate
+			case 'on':
+				return (item) => normalizeDate(item.createdAt) === targetDay
+			default:
+				return undefined
+		}
+	}
+
+	const searchText = normalizedValue.toLocaleLowerCase()
+	const readFieldValue = (item: SampleItem): string => {
+		switch (field) {
+			case 'label':
+				return item.label
+			case 'description':
+				return item.description
+			case 'category':
+				return item.category
+			default:
+				return ''
+		}
+	}
+
+	switch (operator) {
+		case 'contains':
+			return (item) => readFieldValue(item).toLocaleLowerCase().includes(searchText)
+		case 'equals':
+			return (item) => readFieldValue(item).toLocaleLowerCase() === searchText
+		case 'startsWith':
+			return (item) => readFieldValue(item).toLocaleLowerCase().startsWith(searchText)
+		default:
+			return undefined
+	}
 }
 
 export function usePlaygroundState(): PlaygroundState {
@@ -96,6 +184,11 @@ export function usePlaygroundState(): PlaygroundState {
 	const [paginationLabel, setPaginationLabel] = useState('')
 	const [externalControl, setExternalControlState] = useState(false)
 	const [externalPage, setExternalPageState] = useState(0)
+	const [searchField, setSearchField] = useState<SearchField>('label')
+	const [searchOperator, setSearchOperator] = useState<SearchOperator>('contains')
+	const [searchValue, setSearchValue] = useState('')
+	const [searchDuration, setSearchDuration] = useState(1800)
+	const [highlightColor, setHighlightColor] = useState('#0078d4')
 
 	const effectiveExternalControl = paginationRenderMode === 'hidden' ? true : externalControl
 
@@ -118,6 +211,11 @@ export function usePlaygroundState(): PlaygroundState {
 			paginationLabel,
 			externalControl: effectiveExternalControl,
 			externalPage,
+			searchField,
+			searchOperator,
+			searchValue,
+			searchDuration: clampInt(searchDuration, 0, 60_000),
+			highlightColor,
 		}),
 		[
 			itemCount,
@@ -137,6 +235,11 @@ export function usePlaygroundState(): PlaygroundState {
 			paginationLabel,
 			effectiveExternalControl,
 			externalPage,
+			searchField,
+			searchOperator,
+			searchValue,
+			searchDuration,
+			highlightColor,
 		],
 	)
 
@@ -282,6 +385,11 @@ export function usePlaygroundState(): PlaygroundState {
 			setPaginationLabel,
 			setExternalControl,
 			setExternalPage,
+			setSearchField,
+			setSearchOperator,
+			setSearchValue,
+			setSearchDuration,
+			setHighlightColor,
 		},
 		items,
 		layoutConfig,
