@@ -1,26 +1,43 @@
-import type { KeyboardEventHandler } from 'react'
-import { useMemo } from 'react'
+import type { KeyboardEventHandler, MouseEventHandler } from 'react'
+import { useCallback, useMemo } from 'react'
+import type { CellActivationEvent, CellActivationPredicate } from '../core/types'
 
-interface CellInteractionProps {
-	role: 'button'
-	tabIndex: number
-	onDoubleClick: () => void
-	onKeyDown: KeyboardEventHandler<HTMLElement>
+export interface CellInteractionOptions {
+	onActivate: () => void
+	activationPredicate?: CellActivationPredicate
 }
 
-export function useCellInteraction(onActivate: () => void): CellInteractionProps {
+interface CellInteractionProps {
+	role?: 'button'
+	tabIndex?: number
+	onClick?: MouseEventHandler<HTMLElement>
+	onDoubleClick?: MouseEventHandler<HTMLElement>
+	onKeyDown?: KeyboardEventHandler<HTMLElement>
+}
+
+const NO_INTERACTION_PROPS = {}
+
+export function useCellInteraction({ onActivate, activationPredicate }: CellInteractionOptions): CellInteractionProps {
+	const handleEvent = useCallback(
+		(event: CellActivationEvent) => {
+			if (!activationPredicate?.(event)) return
+			event.preventDefault()
+			onActivate()
+		},
+		[activationPredicate, onActivate],
+	)
+
 	return useMemo(
-		() => ({
-			role: 'button' as const,
-			tabIndex: 0,
-			onDoubleClick: onActivate,
-			onKeyDown: (event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault()
-					onActivate()
-				}
-			},
-		}),
-		[onActivate],
+		() =>
+			activationPredicate
+				? {
+						role: 'button' as const,
+						tabIndex: 0,
+						onClick: handleEvent,
+						onDoubleClick: handleEvent,
+						onKeyDown: handleEvent,
+					}
+				: NO_INTERACTION_PROPS,
+		[activationPredicate, handleEvent],
 	)
 }

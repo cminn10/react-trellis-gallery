@@ -1,39 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { memo } from 'react'
 
-import type { LayoutResult } from '../core/types'
-import { useCellInteraction } from '../hooks/use-cell-interaction'
-
-interface PaginationCellProps {
-	item: unknown
-	index: number
-	renderItem: (item: unknown, index: number) => ReactNode
-	onItemDoubleClick: (index: number) => void
-}
-
-const PaginationCell = memo(function PaginationCell({
-	item,
-	index,
-	renderItem,
-	onItemDoubleClick,
-}: PaginationCellProps) {
-	const openItem = () => onItemDoubleClick(index)
-	const interactionProps = useCellInteraction(openItem)
-
-	return (
-		<div
-			{...interactionProps}
-			style={{
-				width: '100%',
-				height: '100%',
-				overflow: 'hidden',
-				background: 'transparent',
-			}}
-		>
-			{renderItem(item, index)}
-		</div>
-	)
-})
+import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult } from '../core/types'
+import { CellContent } from './CellContent'
 
 export interface PaginationGridProps<T> {
 	items: T[]
@@ -44,7 +12,9 @@ export interface PaginationGridProps<T> {
 	className?: string
 	style?: CSSProperties
 	renderItem: (item: T, index: number) => ReactNode
-	onItemDoubleClick: (index: number) => void
+	onCellActivate: (index: number) => void
+	activationPredicate?: CellActivationPredicate
+	indicatorConfig: false | CellIndicatorConfig
 }
 
 export function PaginationGrid<T>({
@@ -56,7 +26,9 @@ export function PaginationGrid<T>({
 	className,
 	style,
 	renderItem,
-	onItemDoubleClick,
+	onCellActivate,
+	activationPredicate,
+	indicatorConfig,
 }: PaginationGridProps<T>) {
 	if (layout.itemsPerPage <= 0 || layout.cols <= 0 || layout.rows <= 0) return null
 
@@ -79,11 +51,13 @@ export function PaginationGrid<T>({
 			{pageItems.map((item, offset) => {
 				const itemIndex = startIndex + offset
 				return (
-					<PaginationCell
+					<CellContent
+						activationPredicate={activationPredicate}
+						indicatorConfig={indicatorConfig}
 						key={itemIndex}
 						index={itemIndex}
 						item={item}
-						onItemDoubleClick={onItemDoubleClick}
+						onCellActivate={onCellActivate}
 						renderItem={renderItem as (item: unknown, index: number) => ReactNode}
 					/>
 				)

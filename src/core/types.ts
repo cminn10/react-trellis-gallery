@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, RefObject } from 'react'
+import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode, Ref, RefObject } from 'react'
 
 export type TrellisMode = 'pagination' | 'scroll'
 
@@ -121,6 +121,26 @@ export interface FloatingPanelDefaults {
 	maxSize?: Size
 }
 
+export interface CellIndicatorConfig {
+	borderColor?: string
+	triangleColor?: string
+	triangleSize?: number
+}
+
+export type CellActivationEvent = MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>
+export type CellActivationPredicate = (event: CellActivationEvent) => boolean
+
+export interface TrellisGalleryHandle<T> {
+	panels: {
+		open: (predicate: (item: T) => boolean) => void
+		close: (predicate: (item: T) => boolean) => void
+		closeAll: () => void
+		closeUnpinned: () => void
+		isOpen: (predicate: (item: T) => boolean) => boolean
+		openPanels: PanelState[]
+	}
+}
+
 export interface TrellisGalleryBaseProps<T> {
 	items: T[]
 	layout: LayoutConfig
@@ -135,6 +155,9 @@ export interface TrellisGalleryBaseProps<T> {
 	renderPanelHeader?: (item: T, api: PanelHeaderAPI) => ReactNode
 	onPanelOpen?: (item: T, index: number) => void
 	onPanelClose?: (item: T, index: number) => void
+	cellIndicator?: false | CellIndicatorConfig
+	cellActivation?: CellActivationPredicate
+	ref?: Ref<TrellisGalleryHandle<T>>
 }
 
 export interface PaginationModeProps<T> extends TrellisGalleryBaseProps<T> {

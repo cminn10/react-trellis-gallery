@@ -8,6 +8,11 @@ interface ControlPanelProps {
 	controls: PlaygroundControls
 	setters: PlaygroundSetters
 	layoutInfo: LayoutResult
+	indicatorEnabled: boolean
+	onIndicatorChange: (next: boolean) => void
+	onOpenItem1: () => void
+	onOpenFirst3: () => void
+	onCloseAll: () => void
 }
 
 interface SectionProps {
@@ -158,7 +163,16 @@ const paginationAlignOptions: SelectOption<PaginationAlign>[] = [
 	{ value: 'end', label: 'Right' },
 ]
 
-export function ControlPanel({ controls, setters, layoutInfo }: ControlPanelProps) {
+export function ControlPanel({
+	controls,
+	setters,
+	layoutInfo,
+	indicatorEnabled,
+	onIndicatorChange,
+	onOpenItem1,
+	onOpenFirst3,
+	onCloseAll,
+}: ControlPanelProps) {
 	const hasExternalPages = layoutInfo.totalPages > 0
 	const externalPageDisplay = hasExternalPages ? controls.externalPage + 1 : 0
 	const externalOnly = controls.paginationRenderMode === 'hidden'
@@ -298,6 +312,21 @@ export function ControlPanel({ controls, setters, layoutInfo }: ControlPanelProp
 					) : null}
 				</Section>
 			) : null}
+
+			<Section title="Panel Control">
+				<div className="panel-control-actions">
+					<button className="external-nav-button panel-action-button" type="button" onClick={onOpenItem1}>
+						Open Item 1
+					</button>
+					<button className="external-nav-button panel-action-button" type="button" onClick={onOpenFirst3}>
+						Open First 3
+					</button>
+					<button className="external-nav-button panel-action-button" type="button" onClick={onCloseAll}>
+						Close All
+					</button>
+				</div>
+				<CheckboxField label="Indicator" checked={indicatorEnabled} onChange={onIndicatorChange} />
+			</Section>
 
 			<Section title="Container">
 				<NumberField

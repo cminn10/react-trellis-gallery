@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useTrellisPaginationContext } from '../context/trellis-pagination-context'
 import { DEFAULT_GAP, DEFAULT_OVERSCAN_COUNT } from '../core/constants'
-import type { LayoutResult, TrellisMode } from '../core/types'
+import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult, TrellisMode } from '../core/types'
 import { PaginationGrid } from './PaginationGrid'
 import { ScrollGrid } from './ScrollGrid'
 
@@ -10,7 +10,9 @@ export interface GridRendererProps<T> {
 	items: T[]
 	layout: LayoutResult
 	renderItem: (item: T, index: number) => ReactNode
-	onItemDoubleClick: (index: number) => void
+	onCellActivate: (index: number) => void
+	activationPredicate?: CellActivationPredicate
+	indicatorConfig: false | CellIndicatorConfig
 	gap?: number
 	overscanCount?: number
 	className?: string
@@ -22,7 +24,9 @@ export function GridRenderer<T>({
 	items,
 	layout,
 	renderItem,
-	onItemDoubleClick,
+	onCellActivate,
+	activationPredicate,
+	indicatorConfig,
 	gap = DEFAULT_GAP,
 	overscanCount = DEFAULT_OVERSCAN_COUNT,
 	className,
@@ -38,7 +42,9 @@ export function GridRenderer<T>({
 				gap={gap}
 				items={items}
 				layout={layout}
-				onItemDoubleClick={onItemDoubleClick}
+				onCellActivate={onCellActivate}
+				activationPredicate={activationPredicate}
+				indicatorConfig={indicatorConfig}
 				renderItem={renderItem}
 				startIndex={pagination.startIndex}
 				style={style}
@@ -52,7 +58,9 @@ export function GridRenderer<T>({
 			gap={gap}
 			items={items}
 			layout={layout}
-			onItemDoubleClick={onItemDoubleClick}
+			onCellActivate={onCellActivate}
+			activationPredicate={activationPredicate}
+			indicatorConfig={indicatorConfig}
 			overscanCount={overscanCount}
 			renderItem={renderItem}
 			style={style}

@@ -61,7 +61,6 @@ export function renderGridItem(item: SampleItem, index: number): ReactNode {
 		<div style={{ ...cardStyle, background: item.color }}>
 			<strong style={{ fontSize: 13 }}>{item.label}</strong>
 			<p style={metaTextStyle}>Index: {index}</p>
-			<p style={metaTextStyle}>Double-click to expand</p>
 		</div>
 	)
 }
@@ -82,7 +81,8 @@ export function renderExpandedItem(item: SampleItem, index: number): ReactNode {
 				}}
 			/>
 			<p style={metaTextStyle}>
-				Use header controls to pin, minimize, maximize/restore, and close. Drag the header to move the panel.
+				Use the cell corner triangle to open panels. In this demo, double-click or Shift+click also opens. Drag the
+				header to move.
 			</p>
 		</div>
 	)

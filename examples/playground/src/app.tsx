@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { TrellisGallery } from 'react-trellis-gallery'
+import { type CellActivationEvent, TrellisGallery, type TrellisGalleryHandle } from 'react-trellis-gallery'
 
 import { ControlPanel } from './control-panel'
 import { renderExpandedItem, renderGridItem } from './sample-items'
@@ -8,11 +8,26 @@ import { usePlaygroundState } from './use-playground-state'
 
 export default function App() {
 	const state = usePlaygroundState()
+	const galleryRef = useRef<TrellisGalleryHandle<(typeof state.items)[number]> | null>(null)
+	const [indicatorEnabled, setIndicatorEnabled] = useState(true)
 	const containerRef = useRef<HTMLDivElement | null>(null)
 	const containerWidthRef = useRef(state.controls.containerWidth)
 	const containerHeightRef = useRef(state.controls.containerHeight)
 	const setContainerWidth = state.setters.setContainerWidth
 	const setContainerHeight = state.setters.setContainerHeight
+	const openItem1 = useCallback(() => {
+		galleryRef.current?.panels.open((item) => item.id === 1)
+	}, [])
+	const openFirst3 = useCallback(() => {
+		galleryRef.current?.panels.open((item) => item.id <= 3)
+	}, [])
+	const closeAllPanels = useCallback(() => {
+		galleryRef.current?.panels.closeAll()
+	}, [])
+	const activationPredicate = useCallback((event: CellActivationEvent) => {
+		if (event.type === 'dblclick') return true
+		return event.type === 'click' && event.shiftKey
+	}, [])
 
 	useEffect(() => {
 		containerWidthRef.current = state.controls.containerWidth
@@ -68,11 +83,28 @@ export default function App() {
 		renderItem: renderGridItem,
 		renderExpandedItem: renderExpandedItem,
 		panelTitle: (item: (typeof state.items)[number]) => item.label,
+		cellActivation: activationPredicate,
+		cellIndicator: indicatorEnabled
+			? {
+					borderColor: 'oklch(0.709 0.01 56.259 / 55%)',
+					triangleColor: 'oklch(0.923 0.003 48.717)',
+					triangleSize: 20,
+				}
+			: false,
 	} as const
 
 	return (
 		<div className="app-root">
-			<ControlPanel controls={state.controls} setters={state.setters} layoutInfo={state.layoutInfo} />
+			<ControlPanel
+				controls={state.controls}
+				setters={state.setters}
+				layoutInfo={state.layoutInfo}
+				indicatorEnabled={indicatorEnabled}
+				onIndicatorChange={setIndicatorEnabled}
+				onOpenItem1={openItem1}
+				onOpenFirst3={openFirst3}
+				onCloseAll={closeAllPanels}
+			/>
 
 			<main className="preview-root">
 				<div
@@ -84,9 +116,9 @@ export default function App() {
 					}}
 				>
 					{state.controls.mode === 'pagination' ? (
-						<TrellisGallery {...galleryProps} mode="pagination" pagination={state.paginationConfig} />
+						<TrellisGallery {...galleryProps} mode="pagination" pagination={state.paginationConfig} ref={galleryRef} />
 					) : (
-						<TrellisGallery {...galleryProps} mode="scroll" />
+						<TrellisGallery {...galleryProps} mode="scroll" ref={galleryRef} />
 					)}
 				</div>
 			</main>

@@ -91,25 +91,25 @@ export function FloatingPanel<T>({
 	onTogglePin,
 }: FloatingPanelProps<T>) {
 	const [stage, setStage] = useState<floatingPanel.Stage>('default')
+	const defaultPosition = useMemo<Point>(() => {
+		const offset = stackIndex * PANEL_CASCADE_OFFSET
+		const rect = boundaryRef.current?.getBoundingClientRect()
+		if (!rect) return { x: 100 + offset, y: 80 + offset }
+		return {
+			x: rect.x + Math.max(16, (rect.width - defaultSize.width) / 2) + offset,
+			y: rect.y + Math.max(16, (rect.height - defaultSize.height) / 2) + offset,
+		}
+	}, [boundaryRef, defaultSize.height, defaultSize.width, stackIndex])
 	const service = useMachine(floatingPanel.machine, {
 		id: panelId,
 		defaultOpen: true,
 		strategy: 'fixed',
 		allowOverflow: false,
 		persistRect: true,
+		defaultPosition,
 		defaultSize,
 		minSize,
 		maxSize,
-		getAnchorPosition: ({ boundaryRect }) => {
-			const offset = stackIndex * PANEL_CASCADE_OFFSET
-			const containerRect = boundaryRef.current?.getBoundingClientRect()
-			const anchorRect = containerRect ?? boundaryRect
-			if (!anchorRect) return { x: 40 + offset, y: 40 + offset }
-
-			const x = anchorRect.x + Math.max(16, (anchorRect.width - defaultSize.width) / 2) + offset
-			const y = anchorRect.y + Math.max(16, (anchorRect.height - defaultSize.height) / 2) + offset
-			return { x, y } satisfies Point
-		},
 		onOpenChange: ({ open }) => {
 			if (!open) onClose(panelId)
 		},

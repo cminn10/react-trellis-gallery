@@ -1,10 +1,18 @@
-import type { FloatingPanelDefaults, LayoutResult, PaginationAlign, PaginationPosition } from './types'
+import type {
+	CellIndicatorConfig,
+	FloatingPanelDefaults,
+	LayoutResult,
+	PaginationAlign,
+	PaginationPosition,
+} from './types'
 
 export const DEFAULT_GAP = 0
 export const DEFAULT_OVERSCAN_COUNT = 1
 export const PANEL_CASCADE_OFFSET = 24
+export const DEFAULT_TRIANGLE_SIZE = 20
 export const DEFAULT_PAGINATION_POSITION: PaginationPosition = 'bottom'
 export const DEFAULT_PAGINATION_ALIGN: PaginationAlign = 'center'
+export const DEFAULT_CELL_INDICATOR: CellIndicatorConfig = {}
 
 export const DEFAULT_FLOATING_PANEL: FloatingPanelDefaults = {
 	size: { width: 600, height: 400 },

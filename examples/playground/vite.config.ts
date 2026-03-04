@@ -7,10 +7,7 @@ export default defineConfig({
 	plugins: [react()],
 	resolve: {
 		alias: {
-			'react-trellis-gallery': resolve(
-				__dirname,
-				process.env.CI ? '../../dist' : '../../src',
-			),
+			'react-trellis-gallery': resolve(__dirname, process.env.CI ? '../../dist' : '../../src'),
 		},
 	},
 })

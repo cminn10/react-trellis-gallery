@@ -2,8 +2,8 @@ import type { CSSProperties, ReactElement, ReactNode } from 'react'
 import { memo, useMemo } from 'react'
 import { type CellComponentProps, Grid, useGridRef } from 'react-window'
 
-import type { LayoutResult } from '../core/types'
-import { useCellInteraction } from '../hooks/use-cell-interaction'
+import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult } from '../core/types'
+import { CellContent } from './CellContent'
 
 interface ScrollCellData {
 	items: unknown[]
@@ -12,7 +12,9 @@ interface ScrollCellData {
 	rowCount: number
 	gap: number
 	renderItem: (item: unknown, index: number) => ReactNode
-	onItemDoubleClick: (index: number) => void
+	onCellActivate: (index: number) => void
+	activationPredicate?: CellActivationPredicate
+	indicatorConfig: false | CellIndicatorConfig
 }
 
 function ScrollCellBase({
@@ -26,11 +28,11 @@ function ScrollCellBase({
 	rowCount,
 	gap,
 	renderItem,
-	onItemDoubleClick,
+	onCellActivate,
+	activationPredicate,
+	indicatorConfig,
 }: CellComponentProps<ScrollCellData>): ReactElement | null {
 	const index = rowIndex * cols + columnIndex
-	const openItem = () => onItemDoubleClick(index)
-	const interactionProps = useCellInteraction(openItem)
 	if (index >= itemCount) return null
 	const isLastColumn = columnIndex === cols - 1
 	const isLastRow = rowIndex === rowCount - 1
@@ -38,7 +40,6 @@ function ScrollCellBase({
 	return (
 		<div
 			{...ariaAttributes}
-			{...interactionProps}
 			style={{
 				...style,
 				overflow: 'hidden',
@@ -48,7 +49,14 @@ function ScrollCellBase({
 				paddingBottom: isLastRow ? 0 : gap,
 			}}
 		>
-			{renderItem(items[index], index)}
+			<CellContent
+				activationPredicate={activationPredicate}
+				indicatorConfig={indicatorConfig}
+				index={index}
+				item={items[index]}
+				onCellActivate={onCellActivate}
+				renderItem={renderItem}
+			/>
 		</div>
 	)
 }
@@ -63,7 +71,9 @@ export interface ScrollGridProps<T> {
 	className?: string
 	style?: CSSProperties
 	renderItem: (item: T, index: number) => ReactNode
-	onItemDoubleClick: (index: number) => void
+	onCellActivate: (index: number) => void
+	activationPredicate?: CellActivationPredicate
+	indicatorConfig: false | CellIndicatorConfig
 }
 
 export function ScrollGrid<T>({
@@ -74,7 +84,9 @@ export function ScrollGrid<T>({
 	className,
 	style,
 	renderItem,
-	onItemDoubleClick,
+	onCellActivate,
+	activationPredicate,
+	indicatorConfig,
 }: ScrollGridProps<T>) {
 	const gridRef = useGridRef(null)
 	const resolvedGap = Math.max(0, gap)
@@ -89,9 +101,11 @@ export function ScrollGrid<T>({
 			rowCount,
 			gap: resolvedGap,
 			renderItem: renderItem as (item: unknown, index: number) => ReactNode,
-			onItemDoubleClick,
+			onCellActivate,
+			activationPredicate,
+			indicatorConfig,
 		}),
-		[items, cols, rowCount, resolvedGap, renderItem, onItemDoubleClick],
+		[items, cols, rowCount, resolvedGap, renderItem, onCellActivate, activationPredicate, indicatorConfig],
 	)
 	const columnWidth = useMemo(() => {
 		return (columnIndex: number) => layout.cellWidth + (columnIndex < cols - 1 ? resolvedGap : 0)
