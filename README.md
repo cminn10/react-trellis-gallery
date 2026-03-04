@@ -17,6 +17,8 @@ High-performance trellis/gallery layout for React with paginated grids, virtuali
 - **Responsive auto layout** — computes rows and columns from minimum item dimensions
 - **Manual layout** — fixed rows × columns for precise control
 - **Floating detail panels** — open panels from the built-in corner triangle trigger, optional custom activation callback, and imperative ref controls (powered by [Zag.js](https://zagjs.com/))
+- **Viewport or container panel boundaries** — choose full-screen movement bounds or constrain to a specific container via `panelBoundary`
+- **Top-layer panel rendering** — panels are rendered in a full-screen portal layer so consumer app z-index/stacking contexts do not cover them
 - **Controlled & uncontrolled pagination** — manage page state externally or let the component handle it
 - **Custom pagination UI** — provide your own render function, use the built-in default, or hide controls entirely
 - **Draggable pagination overlay** — reposition the pagination bar by dragging
@@ -27,6 +29,12 @@ High-performance trellis/gallery layout for React with paginated grids, virtuali
 - **Tree-shakable** — ships ESM + CJS with no side effects
 
 ## Installation
+
+```bash
+bun add react-trellis-gallery
+```
+
+or:
 
 ```bash
 npm install react-trellis-gallery
@@ -157,7 +165,7 @@ Customize the floating panel header for each item:
   panelTitle={(item) => item.title}
   renderPanelHeader={(item, api) => (
     <div>
-      <span>{item.title}</span>
+      <span {...api.titleProps}>{item.title}</span>
       <button onClick={api.togglePin}>{api.isPinned ? 'Unpin' : 'Pin'}</button>
       <button onClick={api.close}>Close</button>
     </div>
@@ -166,6 +174,41 @@ Customize the floating panel header for each item:
   renderExpandedItem={(item) => <div>{item.title}</div>}
 />
 ```
+
+### Panel Boundary and Layering
+
+By default, panels use viewport boundaries and render in a top-level portal layer:
+
+```tsx
+<TrellisGallery
+  items={items}
+  mode="scroll"
+  layout={{ type: 'auto', minItemWidth: 200, minItemHeight: 150 }}
+  panelBoundary="viewport" // default
+  renderItem={(item) => <div>{item.title}</div>}
+  renderExpandedItem={(item) => <div>{item.title}</div>}
+/>
+```
+
+To constrain panel drag/maximize bounds to a specific container:
+
+```tsx
+const containerRef = useRef<HTMLDivElement | null>(null)
+
+<div ref={containerRef} style={{ width: 900, height: 600 }}>
+  <TrellisGallery
+    items={items}
+    mode="pagination"
+    layout={{ type: 'auto', minItemWidth: 200, minItemHeight: 150 }}
+    pagination={{ mode: 'uncontrolled' }}
+    panelBoundary={containerRef}
+    renderItem={(item) => <div>{item.title}</div>}
+    renderExpandedItem={(item) => <div>{item.title}</div>}
+  />
+</div>
+```
+
+`panelBoundary` only controls movement/maximize boundaries. Panel DOM is still rendered in a full-screen portal layer for topmost stacking.
 
 ### Custom Cell Activation
 
@@ -340,6 +383,7 @@ The main component. Renders a grid with optional pagination and floating panels.
 | `overscanCount` | `number` | `1` | Extra rows rendered outside the viewport (scroll mode) |
 | `pagination` | `PaginationConfig` | — | Pagination options (required for pagination mode) |
 | `panelDefaults` | `Partial<FloatingPanelDefaults>` | `{ size: { width: 600, height: 400 }, minSize: { width: 300, height: 180 } }` | Default floating panel dimensions |
+| `panelBoundary` | `'viewport' \| RefObject<HTMLElement \| null>` | `'viewport'` | Panel drag/maximize boundary. Panels still render in a full-screen portal layer |
 | `renderItem` | `(item: T, index: number) => ReactNode` | — | Renders each grid cell |
 | `renderExpandedItem` | `(item: T, index: number) => ReactNode` | — | Renders the content inside a floating panel |
 | `panelTitle` | `(item: T, index: number) => ReactNode` | — | Panel title text |
@@ -473,6 +517,7 @@ Passed to `renderPanelHeader` for controlling individual panels:
 | --- | --- | --- |
 | `close()` | `function` | Close the panel |
 | `pin()` / `unpin()` / `togglePin()` | `function` | Pin/unpin the panel |
+| `titleProps` | `Record<string, unknown>` | Props to spread on your title element to keep `aria-labelledby` wiring intact in custom headers |
 | `isPinned` | `boolean` | Whether the panel is pinned |
 | `minimize()` / `maximize()` / `restore()` | `function` | Window state controls |
 | `isMinimized` / `isMaximized` | `boolean` | Current window state |
@@ -522,6 +567,14 @@ Returned by `useTrellisPanels()` and available on `useTrellisGallery().panels`:
 | `--rtg-highlight-duration-ms` | `1200ms` | CSS transition speed for the highlight fade in/out |
 | `--rtg-cell-border-color` | `rgba(0, 0, 0, 0.15)` | Hover border color on cells |
 | `--rtg-overlay-gradient-start` | `rgba(0, 0, 0, 0.15)` | Pagination overlay gradient start color |
+| `--rtg-bg` | `#ffffff` | Floating panel background color |
+| `--rtg-fg` | `#1a1a1a` | Floating panel text color |
+| `--rtg-shadow` | `0 4px 20px rgba(0, 0, 0, 0.08)` | Floating panel shadow |
+| `--rtg-border-color` | `rgba(0, 0, 0, 0.12)` | Panel/button border color |
+| `--rtg-header-border-color` | `rgba(0, 0, 0, 0.08)` | Panel header bottom border color |
+| `--rtg-button-hover-bg` | `rgba(0, 0, 0, 0.06)` | Header icon button hover background |
+| `--rtg-button-active-bg` | `rgba(0, 0, 0, 0.1)` | Header icon button active background |
+| `--rtg-button-disabled-opacity` | `0.35` | Header icon button disabled opacity |
 
 ## Browser Support
 

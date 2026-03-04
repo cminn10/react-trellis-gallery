@@ -95,6 +95,7 @@ export const CellContent = memo(function CellContent({
 	return (
 		<div
 			data-rtg-cell
+			data-rtg-index={index}
 			data-rtg-highlighted={isHighlighted ? '' : undefined}
 			className={isHighlighted ? highlightClassName : undefined}
 			{...interactionProps}

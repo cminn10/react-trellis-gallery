@@ -46,69 +46,62 @@ export function useTrellisPanels(options?: PanelCallbacks): PanelManagerAPI {
 	const [openPanels, dispatch] = useReducer(panelReducer, [])
 	const idCounterRef = useRef(0)
 	const callbacksRef = useRef(options)
+	const openPanelsRef = useRef(openPanels)
 	callbacksRef.current = options
+	openPanelsRef.current = openPanels
 
-	const open = useCallback(
-		(itemIndex: number) => {
-			const existingPanel = openPanels.find((panel) => panel.itemIndex === itemIndex)
-			if (existingPanel) {
-				dispatch({ type: 'activate', id: existingPanel.id })
-				return
-			}
+	const open = useCallback((itemIndex: number) => {
+		const existingPanel = openPanelsRef.current.find((panel) => panel.itemIndex === itemIndex)
+		if (existingPanel) {
+			dispatch({ type: 'activate', id: existingPanel.id })
+			return
+		}
 
-			idCounterRef.current += 1
-			dispatch({
-				type: 'open',
-				panel: {
-					id: `panel-${idCounterRef.current}-${itemIndex}`,
-					itemIndex,
-					pinned: false,
-				},
-			})
-			callbacksRef.current?.onOpen?.(itemIndex)
-		},
-		[openPanels],
-	)
+		idCounterRef.current += 1
+		dispatch({
+			type: 'open',
+			panel: {
+				id: `panel-${idCounterRef.current}-${itemIndex}`,
+				itemIndex,
+				pinned: false,
+			},
+		})
+		callbacksRef.current?.onOpen?.(itemIndex)
+	}, [])
 
 	const activate = useCallback((id: string) => {
 		dispatch({ type: 'activate', id })
 	}, [])
 
-	const close = useCallback(
-		(id: string) => {
-			const panel = openPanels.find((entry) => entry.id === id)
-			if (!panel) return
+	const close = useCallback((id: string) => {
+		const panel = openPanelsRef.current.find((entry) => entry.id === id)
+		if (!panel) return
 
-			dispatch({ type: 'close', id })
-			callbacksRef.current?.onClose?.(panel.itemIndex)
-		},
-		[openPanels],
-	)
+		dispatch({ type: 'close', id })
+		callbacksRef.current?.onClose?.(panel.itemIndex)
+	}, [])
 
 	const closeAll = useCallback(() => {
-		openPanels.forEach((panel) => {
+		openPanelsRef.current.forEach((panel) => {
 			callbacksRef.current?.onClose?.(panel.itemIndex)
 		})
 		dispatch({ type: 'closeAll' })
-	}, [openPanels])
+	}, [])
 
 	const closeUnpinned = useCallback(() => {
-		openPanels.forEach((panel) => {
+		openPanelsRef.current.forEach((panel) => {
 			if (!panel.pinned) callbacksRef.current?.onClose?.(panel.itemIndex)
 		})
 		dispatch({ type: 'closeUnpinned' })
-	}, [openPanels])
+	}, [])
 
 	const togglePin = useCallback((id: string) => {
 		dispatch({ type: 'togglePin', id })
 	}, [])
 
-	const isOpen = useCallback(
-		(itemIndex: number) => {
-			return openPanels.some((panel) => panel.itemIndex === itemIndex)
-		},
-		[openPanels],
-	)
+	const isOpen = useCallback((itemIndex: number) => {
+		return openPanelsRef.current.some((panel) => panel.itemIndex === itemIndex)
+	}, [])
 
 	return useMemo(
 		() => ({

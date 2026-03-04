@@ -15,6 +15,7 @@ import { generateItems, type SampleItem } from './sample-items'
 
 export type LayoutType = 'auto' | 'manual'
 export type PaginationRenderMode = 'default' | 'custom' | 'hidden'
+export type PanelBoundaryMode = 'viewport' | 'container'
 export type SearchField = 'label' | 'id' | 'description' | 'category' | 'createdAt'
 export type StringOperator = 'contains' | 'equals' | 'startsWith'
 export type NumberOperator = 'eq' | 'gt' | 'lt' | 'gte' | 'lte'
@@ -37,6 +38,7 @@ export interface PlaygroundControls {
 	paginationAlign: PaginationAlign
 	paginationDraggable: boolean
 	paginationLabel: string
+	panelBoundaryMode: PanelBoundaryMode
 	externalControl: boolean
 	externalPage: number
 	searchField: SearchField
@@ -62,6 +64,7 @@ export interface PlaygroundSetters {
 	setPaginationAlign: (value: PaginationAlign) => void
 	setPaginationDraggable: (value: boolean) => void
 	setPaginationLabel: (value: string) => void
+	setPanelBoundaryMode: (value: PanelBoundaryMode) => void
 	setExternalControl: (value: boolean) => void
 	setExternalPage: (value: number) => void
 	setSearchField: (value: SearchField) => void
@@ -182,6 +185,7 @@ export function usePlaygroundState(): PlaygroundState {
 	const [paginationAlign, setPaginationAlign] = useState<PaginationAlign>('center')
 	const [paginationDraggable, setPaginationDraggable] = useState(false)
 	const [paginationLabel, setPaginationLabel] = useState('')
+	const [panelBoundaryMode, setPanelBoundaryMode] = useState<PanelBoundaryMode>('viewport')
 	const [externalControl, setExternalControlState] = useState(false)
 	const [externalPage, setExternalPageState] = useState(0)
 	const [searchField, setSearchField] = useState<SearchField>('label')
@@ -209,6 +213,7 @@ export function usePlaygroundState(): PlaygroundState {
 			paginationAlign,
 			paginationDraggable,
 			paginationLabel,
+			panelBoundaryMode,
 			externalControl: effectiveExternalControl,
 			externalPage,
 			searchField,
@@ -233,6 +238,7 @@ export function usePlaygroundState(): PlaygroundState {
 			paginationAlign,
 			paginationDraggable,
 			paginationLabel,
+			panelBoundaryMode,
 			effectiveExternalControl,
 			externalPage,
 			searchField,
@@ -383,6 +389,7 @@ export function usePlaygroundState(): PlaygroundState {
 			setPaginationAlign,
 			setPaginationDraggable,
 			setPaginationLabel,
+			setPanelBoundaryMode,
 			setExternalControl,
 			setExternalPage,
 			setSearchField,

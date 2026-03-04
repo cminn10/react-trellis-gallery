@@ -81,6 +81,7 @@ export interface PanelHeaderAPI {
 	pin: () => void
 	unpin: () => void
 	togglePin: () => void
+	titleProps: Record<string, unknown>
 	isPinned: boolean
 	minimize: () => void
 	maximize: () => void
@@ -166,6 +167,7 @@ export interface TrellisGalleryBaseProps<T> {
 	style?: CSSProperties
 	overscanCount?: number
 	panelDefaults?: Partial<FloatingPanelDefaults>
+	panelBoundary?: 'viewport' | RefObject<HTMLElement | null>
 	renderItem: (item: T, index: number) => ReactNode
 	renderExpandedItem: (item: T, index: number) => ReactNode
 	panelTitle?: (item: T, index: number) => ReactNode

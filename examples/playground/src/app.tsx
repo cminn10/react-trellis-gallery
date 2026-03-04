@@ -107,6 +107,7 @@ export default function App() {
 		items: state.items,
 		layout: state.layoutConfig,
 		gap: state.controls.gap,
+		panelBoundary: state.controls.panelBoundaryMode === 'container' ? containerRef : 'viewport',
 		highlightColor: state.controls.highlightColor,
 		renderItem: renderGridItem,
 		renderExpandedItem: renderExpandedItem,

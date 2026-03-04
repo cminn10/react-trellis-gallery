@@ -73,6 +73,7 @@ const CELL_INTERACTION_STYLES = `
 export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 	const paginationConfig = props.mode === 'pagination' ? props.pagination : null
 	const gap = props.gap ?? DEFAULT_GAP
+	const panelBoundary = props.panelBoundary ?? 'viewport'
 	const overscanCount = props.overscanCount ?? DEFAULT_OVERSCAN_COUNT
 	const renderControl = paginationConfig?.renderControl
 	const paginationPosition = paginationConfig?.position ?? DEFAULT_PAGINATION_POSITION
@@ -112,6 +113,14 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 		onPanelOpen,
 		onPanelClose,
 	})
+	const {
+		openPanels,
+		open: panelOpen,
+		close: panelClose,
+		closeAll: panelCloseAll,
+		closeUnpinned: panelCloseUnpinned,
+		isOpen: panelIsOpen,
+	} = panels
 	const navigateToIndex = useCallback(
 		(targetIndex: number) => {
 			if (pagination.enabled) {
@@ -145,30 +154,30 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 	const openPanelsByCallback = useCallback(
 		(callback: ItemMatchCallback<T>) => {
 			for (const [index, item] of props.items.entries()) {
-				if (!callback(item) || panels.isOpen(index)) continue
-				panels.open(index)
+				if (!callback(item) || panelIsOpen(index)) continue
+				panelOpen(index)
 			}
 		},
-		[panels, props.items],
+		[panelIsOpen, panelOpen, props.items],
 	)
 	const closePanelsByCallback = useCallback(
 		(callback: ItemMatchCallback<T>) => {
-			for (const panel of panels.openPanels) {
+			for (const panel of openPanels) {
 				const item = props.items[panel.itemIndex]
 				if (item === undefined || !callback(item)) continue
-				panels.close(panel.id)
+				panelClose(panel.id)
 			}
 		},
-		[panels, props.items],
+		[openPanels, panelClose, props.items],
 	)
 	const isAnyPanelOpenByCallback = useCallback(
 		(callback: ItemMatchCallback<T>) => {
 			for (const [index, item] of props.items.entries()) {
-				if (callback(item) && panels.isOpen(index)) return true
+				if (callback(item) && panelIsOpen(index)) return true
 			}
 			return false
 		},
-		[panels, props.items],
+		[panelIsOpen, props.items],
 	)
 	useImperativeHandle<TrellisGalleryHandle<T> | null, TrellisGalleryHandle<T> | null>(
 		ref,
@@ -176,23 +185,23 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 			panels: {
 				open: openPanelsByCallback,
 				close: closePanelsByCallback,
-				closeAll: panels.closeAll,
-				closeUnpinned: panels.closeUnpinned,
+				closeAll: panelCloseAll,
+				closeUnpinned: panelCloseUnpinned,
 				isOpen: isAnyPanelOpenByCallback,
-				openPanels: panels.openPanels,
+				openPanels,
 			},
 			goToItem: highlight.goToItem,
 			clearHighlights: highlight.clearHighlights,
 		}),
 		[
+			openPanels,
+			panelCloseAll,
+			panelCloseUnpinned,
 			closePanelsByCallback,
 			highlight.clearHighlights,
 			highlight.goToItem,
 			isAnyPanelOpenByCallback,
 			openPanelsByCallback,
-			panels.closeAll,
-			panels.closeUnpinned,
-			panels.openPanels,
 		],
 	)
 	const showPagination = pagination.enabled && pagination.totalPages > 1
@@ -225,7 +234,7 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 					items={props.items}
 					layout={layout}
 					mode={props.mode}
-					onCellActivate={panels.open}
+					onCellActivate={panelOpen}
 					overscanCount={overscanCount}
 					renderItem={props.renderItem}
 					style={{ width: '100%', height: '100%' }}
@@ -248,8 +257,9 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 				) : null}
 
 				<MemoizedOverlayManager
-					boundaryRef={containerRef}
+					containerRef={containerRef}
 					items={props.items}
+					panelBoundary={panelBoundary}
 					panelDefaults={props.panelDefaults}
 					panels={panels}
 					renderContent={props.renderExpandedItem}

@@ -1,9 +1,8 @@
 import * as floatingPanel from '@zag-js/floating-panel'
 import { normalizeProps, useMachine } from '@zag-js/react'
-import type { CSSProperties, ReactNode, RefObject } from 'react'
-import { useMemo, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 
-import { PANEL_CASCADE_OFFSET } from '../core/constants'
 import type { PanelHeaderAPI, Point, Size } from '../core/types'
 import { IconButton } from './IconButton'
 import { CloseIcon, MaximizeIcon, MinimizeIcon, PinIcon, RestoreIcon, UnpinIcon } from './icons'
@@ -16,8 +15,8 @@ interface FloatingPanelProps<T> {
 	defaultSize: Size
 	minSize: Size
 	maxSize?: Size
-	stackIndex: number
-	boundaryRef: RefObject<HTMLElement | null>
+	defaultPosition: Point
+	getBoundaryEl?: () => HTMLElement | null
 	renderContent: (item: T, index: number) => ReactNode
 	renderTitle?: (item: T, index: number) => ReactNode
 	renderHeader?: (item: T, api: PanelHeaderAPI) => ReactNode
@@ -29,6 +28,17 @@ interface FloatingPanelProps<T> {
 const RESIZE_AXES: floatingPanel.ResizeTriggerAxis[] = ['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw']
 const RESIZE_HANDLE_THICKNESS = 10
 const RESIZE_CORNER_SIZE = 16
+const VISUALLY_HIDDEN_STYLE: CSSProperties = {
+	position: 'absolute',
+	width: 1,
+	height: 1,
+	padding: 0,
+	margin: -1,
+	overflow: 'hidden',
+	clip: 'rect(0, 0, 0, 0)',
+	whiteSpace: 'nowrap',
+	border: 0,
+}
 
 function getResizeHandleStyle(axis: floatingPanel.ResizeTriggerAxis): CSSProperties {
 	switch (axis) {
@@ -73,7 +83,7 @@ function getResizeHandleStyle(axis: floatingPanel.ResizeTriggerAxis): CSSPropert
 	}
 }
 
-export function FloatingPanel<T>({
+function FloatingPanelInner<T>({
 	item,
 	itemIndex,
 	panelId,
@@ -81,8 +91,8 @@ export function FloatingPanel<T>({
 	defaultSize,
 	minSize,
 	maxSize,
-	stackIndex,
-	boundaryRef,
+	defaultPosition,
+	getBoundaryEl,
 	renderContent,
 	renderTitle,
 	renderHeader,
@@ -91,15 +101,6 @@ export function FloatingPanel<T>({
 	onTogglePin,
 }: FloatingPanelProps<T>) {
 	const [stage, setStage] = useState<floatingPanel.Stage>('default')
-	const defaultPosition = useMemo<Point>(() => {
-		const offset = stackIndex * PANEL_CASCADE_OFFSET
-		const rect = boundaryRef.current?.getBoundingClientRect()
-		if (!rect) return { x: 100 + offset, y: 80 + offset }
-		return {
-			x: rect.x + Math.max(16, (rect.width - defaultSize.width) / 2) + offset,
-			y: rect.y + Math.max(16, (rect.height - defaultSize.height) / 2) + offset,
-		}
-	}, [boundaryRef, defaultSize.height, defaultSize.width, stackIndex])
 	const service = useMachine(floatingPanel.machine, {
 		id: panelId,
 		defaultOpen: true,
@@ -107,6 +108,8 @@ export function FloatingPanel<T>({
 		allowOverflow: false,
 		persistRect: true,
 		defaultPosition,
+		getBoundaryEl,
+		closeOnEscape: true,
 		defaultSize,
 		minSize,
 		maxSize,
@@ -122,6 +125,7 @@ export function FloatingPanel<T>({
 	const minimize = api.minimize
 	const maximize = api.maximize
 	const restore = api.restore
+	const titleProps = api.getTitleProps()
 
 	const panelHeaderApi = useMemo<PanelHeaderAPI>(
 		() => ({
@@ -133,6 +137,7 @@ export function FloatingPanel<T>({
 				if (pinned) onTogglePin(panelId)
 			},
 			togglePin: () => onTogglePin(panelId),
+			titleProps: titleProps as Record<string, unknown>,
 			isPinned: pinned,
 			minimize: () => minimize(),
 			maximize: () => maximize(),
@@ -140,7 +145,7 @@ export function FloatingPanel<T>({
 			isMinimized: stage === 'minimized',
 			isMaximized: stage === 'maximized',
 		}),
-		[maximize, minimize, onClose, onTogglePin, panelId, pinned, restore, stage],
+		[maximize, minimize, onClose, onTogglePin, panelId, pinned, restore, stage, titleProps],
 	)
 
 	const positionerProps = api.getPositionerProps()
@@ -148,11 +153,46 @@ export function FloatingPanel<T>({
 	const dragTriggerProps = api.getDragTriggerProps()
 	const headerProps = api.getHeaderProps()
 	const bodyProps = api.getBodyProps()
+	const resolvedTitle = renderTitle ? renderTitle(item, itemIndex) : `Item ${itemIndex + 1}`
+	const titleStyle: CSSProperties = {
+		...(titleProps.style as CSSProperties | undefined),
+		fontSize: 12,
+		fontWeight: 600,
+		overflow: 'hidden',
+		textOverflow: 'ellipsis',
+	}
 	const isMinimized = stage === 'minimized'
 	const isMaximized = stage === 'maximized'
 
+	useEffect(() => {
+		if (typeof document === 'undefined') return
+		const contentId = contentProps.id
+		if (!contentId) return
+		const frame = requestAnimationFrame(() => {
+			const content = document.getElementById(contentId)
+			if (content instanceof HTMLElement) content.focus({ preventScroll: true })
+		})
+		return () => {
+			cancelAnimationFrame(frame)
+		}
+	}, [contentProps.id])
+
+	useEffect(() => {
+		return () => {
+			if (typeof document === 'undefined') return
+			const cell = document.querySelector(`[data-rtg-cell][data-rtg-index="${itemIndex}"]`)
+			if (cell instanceof HTMLElement) cell.focus({ preventScroll: true })
+		}
+	}, [itemIndex])
+
 	return (
-		<div {...positionerProps}>
+		<div
+			{...positionerProps}
+			style={{
+				...(positionerProps.style ?? {}),
+				pointerEvents: 'auto',
+			}}
+		>
 			<div
 				{...contentProps}
 				style={{
@@ -188,11 +228,16 @@ export function FloatingPanel<T>({
 						}}
 					>
 						{renderHeader ? (
-							renderHeader(item, panelHeaderApi)
+							<>
+								{renderHeader(item, panelHeaderApi)}
+								<div {...titleProps} style={VISUALLY_HIDDEN_STYLE}>
+									{resolvedTitle}
+								</div>
+							</>
 						) : (
 							<>
-								<div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-									{renderTitle ? renderTitle(item, itemIndex) : `Item ${itemIndex + 1}`}
+								<div {...titleProps} style={titleStyle}>
+									{resolvedTitle}
 								</div>
 								<div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
 									<IconButton size={22} title={pinned ? 'Unpin panel' : 'Pin panel'} onClick={panelHeaderApi.togglePin}>
@@ -254,3 +299,5 @@ export function FloatingPanel<T>({
 		</div>
 	)
 }
+
+export const FloatingPanel = memo(FloatingPanelInner) as typeof FloatingPanelInner

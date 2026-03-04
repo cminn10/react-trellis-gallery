@@ -11,6 +11,7 @@ import type {
 import type {
 	LayoutType,
 	PaginationRenderMode,
+	PanelBoundaryMode,
 	PlaygroundControls,
 	PlaygroundSetters,
 	SearchField,
@@ -177,6 +178,10 @@ const paginationAlignOptions: SelectOption<PaginationAlign>[] = [
 	{ value: 'start', label: 'Left' },
 	{ value: 'center', label: 'Center' },
 	{ value: 'end', label: 'Right' },
+]
+const panelBoundaryOptions: SelectOption<PanelBoundaryMode>[] = [
+	{ value: 'viewport', label: 'Viewport' },
+	{ value: 'container', label: 'Container' },
 ]
 
 const searchFieldOptions: SelectOption<SearchField>[] = [
@@ -367,6 +372,12 @@ export function ControlPanel({
 			) : null}
 
 			<Section title="Panel Control">
+				<SelectField
+					label="Boundary"
+					value={controls.panelBoundaryMode}
+					options={panelBoundaryOptions}
+					onChange={setters.setPanelBoundaryMode}
+				/>
 				<div className="panel-control-actions">
 					<button className="external-nav-button panel-action-button" type="button" onClick={onOpenItem1}>
 						Open Item 1

@@ -21,6 +21,18 @@ export const DEFAULT_FLOATING_PANEL: FloatingPanelDefaults = {
 	maxSize: undefined,
 }
 
+export const RTG_PANEL_CSS_VARS = [
+	'--rtg-bg',
+	'--rtg-fg',
+	'--rtg-shadow',
+	'--rtg-border-color',
+	'--rtg-border-radius',
+	'--rtg-header-border-color',
+	'--rtg-button-hover-bg',
+	'--rtg-button-active-bg',
+	'--rtg-button-disabled-opacity',
+] as const
+
 export const EMPTY_LAYOUT: LayoutResult = {
 	rows: 0,
 	cols: 0,
