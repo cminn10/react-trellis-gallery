@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 
-import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult } from '../core/types'
+import type { CellActivationCallback, CellIndicatorConfig, LayoutResult } from '../core/types'
 import { CellContent } from './CellContent'
 
 export interface PaginationGridProps<T> {
@@ -13,7 +13,7 @@ export interface PaginationGridProps<T> {
 	style?: CSSProperties
 	renderItem: (item: T, index: number) => ReactNode
 	onCellActivate: (index: number) => void
-	activationPredicate?: CellActivationPredicate
+	activationCallback?: CellActivationCallback
 	indicatorConfig: false | CellIndicatorConfig
 	highlightedIndices: ReadonlySet<number>
 	highlightClassName?: string
@@ -29,7 +29,7 @@ export function PaginationGrid<T>({
 	style,
 	renderItem,
 	onCellActivate,
-	activationPredicate,
+	activationCallback,
 	indicatorConfig,
 	highlightedIndices,
 	highlightClassName,
@@ -56,7 +56,7 @@ export function PaginationGrid<T>({
 				const itemIndex = startIndex + offset
 				return (
 					<CellContent
-						activationPredicate={activationPredicate}
+						activationCallback={activationCallback}
 						highlightClassName={highlightClassName}
 						indicatorConfig={indicatorConfig}
 						isHighlighted={highlightedIndices.has(itemIndex)}

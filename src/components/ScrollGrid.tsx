@@ -2,7 +2,7 @@ import type { CSSProperties, ReactElement, ReactNode, RefObject } from 'react'
 import { memo, useMemo, useRef } from 'react'
 import { type CellComponentProps, Grid, type GridImperativeAPI } from 'react-window'
 
-import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult } from '../core/types'
+import type { CellActivationCallback, CellIndicatorConfig, LayoutResult } from '../core/types'
 import { CellContent } from './CellContent'
 
 const EMPTY_SET: ReadonlySet<number> = new Set()
@@ -15,7 +15,7 @@ interface ScrollCellData {
 	gap: number
 	renderItem: (item: unknown, index: number) => ReactNode
 	onCellActivate: (index: number) => void
-	activationPredicate?: CellActivationPredicate
+	activationCallback?: CellActivationCallback
 	indicatorConfig: false | CellIndicatorConfig
 	highlightSetRef: RefObject<ReadonlySet<number>>
 	highlightClassName?: string
@@ -34,7 +34,7 @@ function ScrollCellBase({
 	gap,
 	renderItem,
 	onCellActivate,
-	activationPredicate,
+	activationCallback,
 	indicatorConfig,
 	highlightSetRef,
 	highlightClassName,
@@ -58,7 +58,7 @@ function ScrollCellBase({
 			}}
 		>
 			<CellContent
-				activationPredicate={activationPredicate}
+				activationCallback={activationCallback}
 				highlightClassName={highlightClassName}
 				indicatorConfig={indicatorConfig}
 				index={index}
@@ -82,7 +82,7 @@ export interface ScrollGridProps<T> {
 	style?: CSSProperties
 	renderItem: (item: T, index: number) => ReactNode
 	onCellActivate: (index: number) => void
-	activationPredicate?: CellActivationPredicate
+	activationCallback?: CellActivationCallback
 	indicatorConfig: false | CellIndicatorConfig
 	gridRef: RefObject<GridImperativeAPI | null>
 	highlightedIndices: ReadonlySet<number>
@@ -99,7 +99,7 @@ export function ScrollGrid<T>({
 	style,
 	renderItem,
 	onCellActivate,
-	activationPredicate,
+	activationCallback,
 	indicatorConfig,
 	gridRef,
 	highlightedIndices,
@@ -121,7 +121,7 @@ export function ScrollGrid<T>({
 			gap: resolvedGap,
 			renderItem: renderItem as (item: unknown, index: number) => ReactNode,
 			onCellActivate,
-			activationPredicate,
+			activationCallback,
 			indicatorConfig,
 			highlightSetRef,
 			highlightClassName,
@@ -134,7 +134,7 @@ export function ScrollGrid<T>({
 			resolvedGap,
 			renderItem,
 			onCellActivate,
-			activationPredicate,
+			activationCallback,
 			indicatorConfig,
 			highlightClassName,
 			highlightEpoch,

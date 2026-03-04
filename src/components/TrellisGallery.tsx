@@ -8,7 +8,7 @@ import {
 	DEFAULT_PAGINATION_ALIGN,
 	DEFAULT_PAGINATION_POSITION,
 } from '../core/constants'
-import type { TrellisGalleryHandle, TrellisGalleryProps } from '../core/types'
+import type { ItemMatchCallback, TrellisGalleryHandle, TrellisGalleryProps } from '../core/types'
 import { useTrellisGallery } from '../hooks/use-trellis-gallery'
 import { useTrellisHighlight } from '../hooks/use-trellis-highlight'
 import { DefaultPagination } from './DefaultPagination'
@@ -140,32 +140,31 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 		items: props.items,
 		itemsPerPage: pagination.itemsPerPage,
 		navigate: navigateToIndex,
-		highlightPredicate: props.highlightPredicate,
 		defaultDuration: props.highlightDuration,
 	})
-	const openPanelsByPredicate = useCallback(
-		(predicate: (item: T) => boolean) => {
+	const openPanelsByCallback = useCallback(
+		(callback: ItemMatchCallback<T>) => {
 			for (const [index, item] of props.items.entries()) {
-				if (!predicate(item) || panels.isOpen(index)) continue
+				if (!callback(item) || panels.isOpen(index)) continue
 				panels.open(index)
 			}
 		},
 		[panels, props.items],
 	)
-	const closePanelsByPredicate = useCallback(
-		(predicate: (item: T) => boolean) => {
+	const closePanelsByCallback = useCallback(
+		(callback: ItemMatchCallback<T>) => {
 			for (const panel of panels.openPanels) {
 				const item = props.items[panel.itemIndex]
-				if (item === undefined || !predicate(item)) continue
+				if (item === undefined || !callback(item)) continue
 				panels.close(panel.id)
 			}
 		},
 		[panels, props.items],
 	)
-	const isAnyPanelOpenByPredicate = useCallback(
-		(predicate: (item: T) => boolean) => {
+	const isAnyPanelOpenByCallback = useCallback(
+		(callback: ItemMatchCallback<T>) => {
 			for (const [index, item] of props.items.entries()) {
-				if (predicate(item) && panels.isOpen(index)) return true
+				if (callback(item) && panels.isOpen(index)) return true
 			}
 			return false
 		},
@@ -175,22 +174,22 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 		ref,
 		() => ({
 			panels: {
-				open: openPanelsByPredicate,
-				close: closePanelsByPredicate,
+				open: openPanelsByCallback,
+				close: closePanelsByCallback,
 				closeAll: panels.closeAll,
 				closeUnpinned: panels.closeUnpinned,
-				isOpen: isAnyPanelOpenByPredicate,
+				isOpen: isAnyPanelOpenByCallback,
 				openPanels: panels.openPanels,
 			},
 			goToItem: highlight.goToItem,
 			clearHighlights: highlight.clearHighlights,
 		}),
 		[
-			closePanelsByPredicate,
+			closePanelsByCallback,
 			highlight.clearHighlights,
 			highlight.goToItem,
-			isAnyPanelOpenByPredicate,
-			openPanelsByPredicate,
+			isAnyPanelOpenByCallback,
+			openPanelsByCallback,
 			panels.closeAll,
 			panels.closeUnpinned,
 			panels.openPanels,
@@ -217,7 +216,7 @@ export function TrellisGallery<T>({ ref, ...props }: TrellisGalleryProps<T>) {
 				<style data-rtg-styles>{CELL_INTERACTION_STYLES}</style>
 
 				<GridRenderer
-					activationPredicate={props.cellActivation}
+					activationCallback={props.cellActivation}
 					gridRef={gridRef}
 					highlightClassName={props.highlightClassName}
 					highlightEpoch={highlight.highlightEpoch}

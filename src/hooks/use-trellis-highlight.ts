@@ -1,7 +1,7 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
 
 import { DEFAULT_HIGHLIGHT_DURATION } from '../core/constants'
-import type { GoToItemOptions, GoToItemResult } from '../core/types'
+import type { GoToItemOptions, GoToItemResult, ItemMatchCallback } from '../core/types'
 
 const EMPTY_SET: ReadonlySet<number> = new Set()
 const LARGE_DATASET_THRESHOLD = 10_000
@@ -15,10 +15,10 @@ function setsEqual(a: ReadonlySet<number>, b: ReadonlySet<number>): boolean {
 	return true
 }
 
-function findMatchIndices<T>(items: T[], predicate: (item: T) => boolean): number[] {
+function findMatchIndices<T>(items: T[], callback: ItemMatchCallback<T>): number[] {
 	const matchIndices: number[] = []
 	for (const [index, item] of items.entries()) {
-		if (predicate(item)) matchIndices.push(index)
+		if (callback(item)) matchIndices.push(index)
 	}
 	return matchIndices
 }
@@ -37,7 +37,6 @@ export interface UseTrellisHighlightOptions<T> {
 	items: T[]
 	itemsPerPage: number
 	navigate: (targetIndex: number) => void
-	highlightPredicate?: (item: T) => boolean
 	/** Component-level auto-clear default (ms). `0` = keep indefinitely. Overridden by per-call `GoToItemOptions.highlightDuration`. */
 	defaultDuration?: number
 }
@@ -45,7 +44,7 @@ export interface UseTrellisHighlightOptions<T> {
 export interface UseTrellisHighlightResult<T> {
 	highlightedIndices: ReadonlySet<number>
 	highlightEpoch: number
-	goToItem: (predicate: (item: T) => boolean, options?: GoToItemOptions) => GoToItemResult
+	goToItem: (callback: ItemMatchCallback<T>, options?: GoToItemOptions) => GoToItemResult
 	clearHighlights: () => void
 }
 
@@ -58,7 +57,6 @@ export function useTrellisHighlight<T>({
 	items,
 	itemsPerPage,
 	navigate,
-	highlightPredicate,
 	defaultDuration,
 }: UseTrellisHighlightOptions<T>): UseTrellisHighlightResult<T> {
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -95,8 +93,8 @@ export function useTrellisHighlight<T>({
 	}, [clearTimer, updateHighlights])
 
 	const goToItem = useCallback(
-		(predicate: (item: T) => boolean, options?: GoToItemOptions): GoToItemResult => {
-			const matchIndices = findMatchIndices(items, predicate)
+		(callback: ItemMatchCallback<T>, options?: GoToItemOptions): GoToItemResult => {
+			const matchIndices = findMatchIndices(items, callback)
 			if (matchIndices.length === 0) {
 				clearHighlights()
 				return {
@@ -120,17 +118,13 @@ export function useTrellisHighlight<T>({
 				updateHighlights(nextSet)
 			}
 
-			const highlightDuration =
-				options?.highlightDuration ?? defaultDurationRef.current ?? DEFAULT_HIGHLIGHT_DURATION
+			const highlightDuration = options?.highlightDuration ?? defaultDurationRef.current ?? DEFAULT_HIGHLIGHT_DURATION
 			clearTimer()
 			if (highlightDuration > 0 && Number.isFinite(highlightDuration)) {
-				timerRef.current = setTimeout(
-					() => {
-						updateHighlights(EMPTY_SET)
-						timerRef.current = null
-					},
-					highlightDuration,
-				)
+				timerRef.current = setTimeout(() => {
+					updateHighlights(EMPTY_SET)
+					timerRef.current = null
+				}, highlightDuration)
 			}
 
 			return {
@@ -143,31 +137,6 @@ export function useTrellisHighlight<T>({
 		},
 		[clearHighlights, clearTimer, items, updateHighlights],
 	)
-
-	useEffect(() => {
-		clearTimer()
-		if (!highlightPredicate) {
-			updateHighlights(EMPTY_SET)
-			return
-		}
-
-		const matchIndices = findMatchIndices(items, highlightPredicate)
-		if (matchIndices.length === 0) {
-			updateHighlights(EMPTY_SET)
-			return
-		}
-
-		const targetIndex = matchIndices[0] ?? -1
-		if (targetIndex >= 0) navigateRef.current(targetIndex)
-		const nextSet = new Set(matchIndices)
-		if (items.length > LARGE_DATASET_THRESHOLD) {
-			startTransition(() => {
-				updateHighlights(nextSet)
-			})
-			return
-		}
-		updateHighlights(nextSet)
-	}, [clearTimer, highlightPredicate, items, updateHighlights])
 
 	useEffect(() => {
 		return () => {

@@ -5,14 +5,15 @@ export { useTrellisPaginationContext } from './context/trellis-pagination-contex
 export { calculateLayout, fitGrid } from './core/layout-engine'
 export type {
 	AutoLayoutConfig,
+	CellActivationCallback,
 	CellActivationEvent,
-	CellActivationPredicate,
 	CellIndicatorConfig,
 	ContainerSize,
 	ControlledPaginationConfig,
 	FloatingPanelDefaults,
 	GoToItemOptions,
 	GoToItemResult,
+	ItemMatchCallback,
 	LayoutConfig,
 	LayoutResult,
 	ManualLayoutConfig,

@@ -2,7 +2,7 @@ import type { CSSProperties, MouseEventHandler, ReactNode } from 'react'
 import { memo, useCallback, useMemo } from 'react'
 
 import { DEFAULT_TRIANGLE_SIZE } from '../core/constants'
-import type { CellActivationPredicate, CellIndicatorConfig } from '../core/types'
+import type { CellActivationCallback, CellIndicatorConfig } from '../core/types'
 import { useCellInteraction } from '../hooks/use-cell-interaction'
 
 interface CellContentProps {
@@ -10,7 +10,7 @@ interface CellContentProps {
 	index: number
 	renderItem: (item: unknown, index: number) => ReactNode
 	onCellActivate: (index: number) => void
-	activationPredicate?: CellActivationPredicate
+	activationCallback?: CellActivationCallback
 	indicatorConfig: false | CellIndicatorConfig
 	isHighlighted?: boolean
 	highlightClassName?: string
@@ -40,7 +40,7 @@ export const CellContent = memo(function CellContent({
 	index,
 	renderItem,
 	onCellActivate,
-	activationPredicate,
+	activationCallback,
 	indicatorConfig,
 	isHighlighted = false,
 	highlightClassName,
@@ -50,7 +50,7 @@ export const CellContent = memo(function CellContent({
 	}, [index, onCellActivate])
 	const interactionProps = useCellInteraction({
 		onActivate,
-		activationPredicate,
+		activationCallback,
 	})
 	const triangleSize =
 		indicatorConfig === false ? DEFAULT_TRIANGLE_SIZE : (indicatorConfig.triangleSize ?? DEFAULT_TRIANGLE_SIZE)

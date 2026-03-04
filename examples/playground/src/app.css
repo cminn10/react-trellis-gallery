@@ -255,7 +255,9 @@ body {
 	height: 34px;
 	border-radius: calc(var(--radius) - 2px);
 	color: var(--muted-foreground);
-	transition: color 0.15s, background 0.15s;
+	transition:
+		color 0.15s,
+		background 0.15s;
 }
 
 .top-link:hover {

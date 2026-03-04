@@ -16,12 +16,12 @@ High-performance trellis/gallery layout for React with paginated grids, virtuali
 - **Two display modes** — paginated grid or virtualized infinite scroll (powered by [react-window](https://github.com/bvaughn/react-window))
 - **Responsive auto layout** — computes rows and columns from minimum item dimensions
 - **Manual layout** — fixed rows × columns for precise control
-- **Floating detail panels** — open panels from the built-in corner triangle trigger, optional custom activation predicate, and imperative ref controls (powered by [Zag.js](https://zagjs.com/))
+- **Floating detail panels** — open panels from the built-in corner triangle trigger, optional custom activation callback, and imperative ref controls (powered by [Zag.js](https://zagjs.com/))
 - **Controlled & uncontrolled pagination** — manage page state externally or let the component handle it
 - **Custom pagination UI** — provide your own render function, use the built-in default, or hide controls entirely
 - **Draggable pagination overlay** — reposition the pagination bar by dragging
-- **Go to item by predicate** — navigate to and highlight items matching a predicate across pages or in scroll mode, with configurable highlight color and auto-clear duration
-- **Keyboard accessible** — corner trigger is keyboard-focusable; custom activation predicates can include keyboard combos
+- **Go to item by callback** — navigate to a target match and highlight all callback matches across pages or in scroll mode, with configurable highlight color and auto-clear duration
+- **Keyboard accessible** — corner trigger is keyboard-focusable; custom activation callbacks can include keyboard combos
 - **SSR-safe** — uses isomorphic layout effects for server-side rendering compatibility
 - **Fully typed** — written in TypeScript with all types exported
 - **Tree-shakable** — ships ESM + CJS with no side effects
@@ -230,11 +230,11 @@ function GalleryWithExternalActions({ items }) {
 }
 ```
 
-### Go To Item by Predicate
+### Go To and Highlight by Callback
 
-Navigate to and highlight items that match a predicate. Works in both pagination and scroll modes.
+Pass a callback to match items, navigate to the target match, and highlight all matches. Works in both pagination and scroll modes.
 
-**Imperative** — call `goToItem` on the ref handle:
+Call `goToItem` on the ref handle:
 
 ```tsx
 import { useRef } from 'react'
@@ -259,20 +259,6 @@ function SearchableGallery({ items }) {
     </>
   )
 }
-```
-
-**Declarative** — pass a `highlightPredicate` prop:
-
-```tsx
-const [filter, setFilter] = useState('')
-
-<TrellisGallery
-  items={items}
-  highlightPredicate={filter ? (item) => item.category === filter : undefined}
-  highlightColor="#e63946"
-  highlightDuration={0} // 0 = no auto-clear
-  {...otherProps}
-/>
 ```
 
 **Customizing the highlight appearance:**
@@ -303,7 +289,7 @@ import { useTrellisGallery, useCellInteraction } from 'react-trellis-gallery'
 function Cell({ item, onOpen }) {
   const interaction = useCellInteraction({
     onActivate: onOpen,
-    activationPredicate: (event) => event.type === 'dblclick',
+    activationCallback: (event) => event.type === 'dblclick',
   })
 
   return <div {...interaction}>{item.title}</div>
@@ -361,10 +347,9 @@ The main component. Renders a grid with optional pagination and floating panels.
 | `onPanelOpen` | `(item: T, index: number) => void` | — | Called when a panel opens |
 | `onPanelClose` | `(item: T, index: number) => void` | — | Called when a panel closes |
 | `cellIndicator` | `false \| CellIndicatorConfig` | Enabled | Shows per-cell border + corner triangle trigger; pass `false` to disable |
-| `cellActivation` | `(event: CellActivationEvent) => boolean` | — | Optional predicate to open panels from custom click/double-click/keyboard combos |
+| `cellActivation` | `(event: CellActivationEvent) => boolean` | — | Optional callback to open panels from custom click/double-click/keyboard combos |
 | `highlightColor` | `string` | `'#0078d4'` | CSS color for the highlight border |
 | `highlightDuration` | `number` | `3600` | Auto-clear delay in ms. `0` = keep indefinitely |
-| `highlightPredicate` | `(item: T) => boolean` | — | Declarative highlight — items matching the predicate are highlighted and the view navigates to the first match |
 | `highlightClassName` | `string` | — | Additional CSS class applied to highlighted cells |
 | `ref` | `Ref<TrellisGalleryHandle<T>>` | — | Imperative handle for panels and go-to-item |
 | `className` | `string` | — | CSS class for the container |
@@ -387,14 +372,14 @@ Exposed from `ref` on `<TrellisGallery>`:
 ```ts
 {
   panels: {
-    open(predicate: (item: T) => boolean): void
-    close(predicate: (item: T) => boolean): void
+    open(callback: (item: T) => boolean): void
+    close(callback: (item: T) => boolean): void
     closeAll(): void
     closeUnpinned(): void
-    isOpen(predicate: (item: T) => boolean): boolean
+    isOpen(callback: (item: T) => boolean): boolean
     openPanels: PanelState[]
   }
-  goToItem(predicate: (item: T) => boolean, options?: GoToItemOptions): GoToItemResult
+  goToItem(callback: (item: T) => boolean, options?: GoToItemOptions): GoToItemResult
   clearHighlights(): void
 }
 ```
@@ -515,8 +500,8 @@ Returned by `useTrellisPanels()` and available on `useTrellisGallery().panels`:
 | `useTrellisLayout(containerSize, itemCount, config, gap?)` | Computes grid layout from container dimensions |
 | `useTrellisPagination(layout, totalItems, config)` | Manages pagination state and navigation |
 | `useTrellisPanels(callbacks?)` | Manages floating panel open/close/pin state |
-| `useTrellisHighlight(options)` | Manages highlight state, match scanning, navigation, and auto-clear. Accepts `items`, `itemsPerPage`, `navigate`, `highlightPredicate`, and `defaultDuration`. |
-| `useCellInteraction({ onActivate, activationPredicate })` | Returns cell props for optional activation. When `activationPredicate` is omitted it returns an empty prop object. |
+| `useTrellisHighlight(options)` | Manages highlight state, match scanning, navigation, and auto-clear. Accepts `items`, `itemsPerPage`, `navigate`, and `defaultDuration`. |
+| `useCellInteraction({ onActivate, activationCallback })` | Returns cell props for optional activation. When `activationCallback` is omitted it returns an empty prop object. |
 | `useContainerSize(ref)` | Tracks element dimensions via ResizeObserver |
 | `useTrellisPaginationContext()` | Reads pagination state from context (for child components of `TrellisGallery`) |
 

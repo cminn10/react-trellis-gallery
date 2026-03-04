@@ -97,7 +97,7 @@ function normalizeDate(value: Date): string {
 	return value.toISOString().slice(0, 10)
 }
 
-export function buildPredicate(
+export function buildMatchCallback(
 	field: SearchField,
 	operator: SearchOperator,
 	value: string,

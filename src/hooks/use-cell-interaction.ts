@@ -1,10 +1,10 @@
 import type { KeyboardEventHandler, MouseEventHandler } from 'react'
 import { useCallback, useMemo } from 'react'
-import type { CellActivationEvent, CellActivationPredicate } from '../core/types'
+import type { CellActivationCallback, CellActivationEvent } from '../core/types'
 
 export interface CellInteractionOptions {
 	onActivate: () => void
-	activationPredicate?: CellActivationPredicate
+	activationCallback?: CellActivationCallback
 }
 
 interface CellInteractionProps {
@@ -17,19 +17,19 @@ interface CellInteractionProps {
 
 const NO_INTERACTION_PROPS = {}
 
-export function useCellInteraction({ onActivate, activationPredicate }: CellInteractionOptions): CellInteractionProps {
+export function useCellInteraction({ onActivate, activationCallback }: CellInteractionOptions): CellInteractionProps {
 	const handleEvent = useCallback(
 		(event: CellActivationEvent) => {
-			if (!activationPredicate?.(event)) return
+			if (!activationCallback?.(event)) return
 			event.preventDefault()
 			onActivate()
 		},
-		[activationPredicate, onActivate],
+		[activationCallback, onActivate],
 	)
 
 	return useMemo(
 		() =>
-			activationPredicate
+			activationCallback
 				? {
 						role: 'button' as const,
 						tabIndex: 0,
@@ -38,6 +38,6 @@ export function useCellInteraction({ onActivate, activationPredicate }: CellInte
 						onKeyDown: handleEvent,
 					}
 				: NO_INTERACTION_PROPS,
-		[activationPredicate, handleEvent],
+		[activationCallback, handleEvent],
 	)
 }

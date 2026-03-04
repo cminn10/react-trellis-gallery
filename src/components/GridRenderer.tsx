@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode, RefObject } from 'react'
 import type { GridImperativeAPI } from 'react-window'
 import { useTrellisPaginationContext } from '../context/trellis-pagination-context'
 import { DEFAULT_GAP, DEFAULT_OVERSCAN_COUNT } from '../core/constants'
-import type { CellActivationPredicate, CellIndicatorConfig, LayoutResult, TrellisMode } from '../core/types'
+import type { CellActivationCallback, CellIndicatorConfig, LayoutResult, TrellisMode } from '../core/types'
 import { PaginationGrid } from './PaginationGrid'
 import { ScrollGrid } from './ScrollGrid'
 
@@ -12,7 +12,7 @@ export interface GridRendererProps<T> {
 	layout: LayoutResult
 	renderItem: (item: T, index: number) => ReactNode
 	onCellActivate: (index: number) => void
-	activationPredicate?: CellActivationPredicate
+	activationCallback?: CellActivationCallback
 	indicatorConfig: false | CellIndicatorConfig
 	gap?: number
 	overscanCount?: number
@@ -30,7 +30,7 @@ export function GridRenderer<T>({
 	layout,
 	renderItem,
 	onCellActivate,
-	activationPredicate,
+	activationCallback,
 	indicatorConfig,
 	gap = DEFAULT_GAP,
 	overscanCount = DEFAULT_OVERSCAN_COUNT,
@@ -52,7 +52,7 @@ export function GridRenderer<T>({
 				items={items}
 				layout={layout}
 				onCellActivate={onCellActivate}
-				activationPredicate={activationPredicate}
+				activationCallback={activationCallback}
 				highlightClassName={highlightClassName}
 				highlightedIndices={highlightedIndices}
 				indicatorConfig={indicatorConfig}
@@ -70,7 +70,7 @@ export function GridRenderer<T>({
 			items={items}
 			layout={layout}
 			onCellActivate={onCellActivate}
-			activationPredicate={activationPredicate}
+			activationCallback={activationCallback}
 			gridRef={gridRef}
 			highlightClassName={highlightClassName}
 			highlightEpoch={highlightEpoch}
