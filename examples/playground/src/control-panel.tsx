@@ -53,9 +53,10 @@ interface NumberFieldProps {
 	min?: number
 	max?: number
 	step?: number
+	disabled?: boolean
 }
 
-function NumberField({ label, value, onChange, min, max, step }: NumberFieldProps) {
+function NumberField({ label, value, onChange, min, max, step, disabled = false }: NumberFieldProps) {
 	return (
 		<label className="control-row">
 			<span>{label}</span>
@@ -65,6 +66,7 @@ function NumberField({ label, value, onChange, min, max, step }: NumberFieldProp
 				min={min}
 				max={max}
 				step={step}
+				disabled={disabled}
 				onChange={(event) => {
 					const next = Number(event.target.value)
 					onChange(Number.isFinite(next) ? next : 0)
@@ -239,6 +241,7 @@ export function ControlPanel({
 		<aside className="control-panel">
 			<h2>TrellisGallery Playground</h2>
 			<p className="panel-description">Tune layout, pagination, and container sizing with a stone-inspired UI.</p>
+			<CheckboxField label="Dual Gallery" checked={controls.dualGallery} onChange={setters.setDualGallery} />
 
 			<Section title="Grid Controls">
 				<NumberField
@@ -471,6 +474,7 @@ export function ControlPanel({
 					min={100}
 					max={2000}
 					step={10}
+					disabled={controls.dualGallery}
 				/>
 				<NumberField
 					label="Height"
@@ -479,6 +483,7 @@ export function ControlPanel({
 					min={100}
 					max={1500}
 					step={10}
+					disabled={controls.dualGallery}
 				/>
 			</Section>
 

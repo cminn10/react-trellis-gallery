@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 
 import {
 	type CellActivationEvent,
@@ -17,6 +17,8 @@ export default function App() {
 	const [indicatorEnabled, setIndicatorEnabled] = useState(true)
 	const [searchResult, setSearchResult] = useState<GoToItemResult | null>(null)
 	const containerRef = useRef<HTMLDivElement | null>(null)
+	const topContainerRef = useRef<HTMLDivElement | null>(null)
+	const bottomContainerRef = useRef<HTMLDivElement | null>(null)
 	const containerWidthRef = useRef(state.controls.containerWidth)
 	const containerHeightRef = useRef(state.controls.containerHeight)
 	const setContainerWidth = state.setters.setContainerWidth
@@ -55,6 +57,14 @@ export default function App() {
 		if (event.type === 'dblclick') return true
 		return event.type === 'click' && event.shiftKey
 	}, [])
+	const coolThemeVars = {
+		'--rtg-bg': 'oklch(0.98 0.005 240)',
+		'--rtg-border-color': 'oklch(0.88 0.01 240 / 78%)',
+		'--rtg-header-border-color': 'oklch(0.88 0.01 240 / 95%)',
+		'--rtg-shadow': '0 16px 36px oklch(0.2 0.02 240 / 14%)',
+		'--rtg-button-hover-bg': 'oklch(0.94 0.008 240)',
+		'--rtg-button-active-bg': 'oklch(0.88 0.01 240)',
+	} as CSSProperties
 
 	useEffect(() => {
 		containerWidthRef.current = state.controls.containerWidth
@@ -78,7 +88,6 @@ export default function App() {
 				nextWidth = Math.round(borderBox.inlineSize)
 				nextHeight = Math.round(borderBox.blockSize)
 			} else {
-				// Fallback for older environments without borderBoxSize.
 				const rect = container.getBoundingClientRect()
 				nextWidth = Math.round(rect.width)
 				nextHeight = Math.round(rect.height)
@@ -103,11 +112,9 @@ export default function App() {
 			if (rafId !== null) cancelAnimationFrame(rafId)
 		}
 	}, [setContainerHeight, setContainerWidth])
-	const galleryProps = {
-		items: state.items,
+	const sharedGalleryProps = {
 		layout: state.layoutConfig,
 		gap: state.controls.gap,
-		panelBoundary: state.controls.panelBoundaryMode === 'container' ? containerRef : 'viewport',
 		highlightColor: state.controls.highlightColor,
 		renderItem: renderGridItem,
 		renderExpandedItem: renderExpandedItem,
@@ -121,6 +128,7 @@ export default function App() {
 				}
 			: false,
 	} as const
+	const singlePanelBoundary = state.controls.panelBoundaryMode === 'container' ? containerRef : 'viewport'
 
 	return (
 		<div className="app-root">
@@ -165,21 +173,75 @@ export default function App() {
 				searchResult={searchResult}
 			/>
 
-			<main className="preview-root">
-				<div
-					ref={containerRef}
-					className="preview-container"
-					style={{
-						width: state.controls.containerWidth,
-						height: state.controls.containerHeight,
-					}}
-				>
-					{state.controls.mode === 'pagination' ? (
-						<TrellisGallery {...galleryProps} mode="pagination" pagination={state.paginationConfig} ref={galleryRef} />
-					) : (
-						<TrellisGallery {...galleryProps} mode="scroll" ref={galleryRef} />
-					)}
-				</div>
+			<main className={`preview-root${state.controls.dualGallery ? ' preview-root--dual' : ''}`}>
+				{state.controls.dualGallery ? (
+					<>
+						<section className="dual-gallery-section">
+							<h3>Stones &amp; Marble</h3>
+							<div ref={topContainerRef} className="dual-gallery-container">
+								{state.controls.mode === 'pagination' ? (
+									<TrellisGallery
+										{...sharedGalleryProps}
+										items={state.topItems}
+										mode="pagination"
+										pagination={state.paginationConfig}
+										panelBoundary="viewport"
+										ref={galleryRef}
+									/>
+								) : (
+									<TrellisGallery
+										{...sharedGalleryProps}
+										items={state.topItems}
+										mode="scroll"
+										panelBoundary="viewport"
+										ref={galleryRef}
+									/>
+								)}
+							</div>
+						</section>
+						<section className="dual-gallery-section">
+							<h3>Slate &amp; Granite</h3>
+							<div className="dual-gallery-theme" style={coolThemeVars}>
+								<div ref={bottomContainerRef} className="dual-gallery-container">
+									<TrellisGallery
+										{...sharedGalleryProps}
+										items={state.bottomItems}
+										mode="scroll"
+										panelBoundary="viewport"
+									/>
+								</div>
+							</div>
+						</section>
+					</>
+				) : (
+					<div
+						ref={containerRef}
+						className="preview-container"
+						style={{
+							width: state.controls.containerWidth,
+							height: state.controls.containerHeight,
+						}}
+					>
+						{state.controls.mode === 'pagination' ? (
+							<TrellisGallery
+								{...sharedGalleryProps}
+								items={state.items}
+								mode="pagination"
+								pagination={state.paginationConfig}
+								panelBoundary={singlePanelBoundary}
+								ref={galleryRef}
+							/>
+						) : (
+							<TrellisGallery
+								{...sharedGalleryProps}
+								items={state.items}
+								mode="scroll"
+								panelBoundary={singlePanelBoundary}
+								ref={galleryRef}
+							/>
+						)}
+					</div>
+				)}
 			</main>
 		</div>
 	)

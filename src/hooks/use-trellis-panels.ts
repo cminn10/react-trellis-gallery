@@ -2,9 +2,13 @@ import { useCallback, useMemo, useReducer, useRef } from 'react'
 
 import type { PanelCallbacks, PanelManagerAPI, PanelState } from '../core/types'
 
+let globalIdCounter = 0
+let globalOpenCounter = 0
+let globalActivationCounter = 0
+
 type PanelAction =
 	| { type: 'open'; panel: PanelState }
-	| { type: 'activate'; id: string }
+	| { type: 'activate'; id: string; activationOrder: number }
 	| { type: 'close'; id: string }
 	| { type: 'closeAll' }
 	| { type: 'closeUnpinned' }
@@ -19,8 +23,9 @@ function panelReducer(state: PanelState[], action: PanelAction): PanelState[] {
 		}
 		case 'activate': {
 			const panel = state.find((entry) => entry.id === action.id)
-			if (!panel || panel.pinned) return state
-			return [...state.filter((entry) => entry.id !== action.id), panel]
+			if (!panel) return state
+			const updated = { ...panel, activationOrder: action.activationOrder }
+			return [...state.filter((entry) => entry.id !== action.id), updated]
 		}
 		case 'close':
 			return state.filter((panel) => panel.id !== action.id)
@@ -44,7 +49,6 @@ function panelReducer(state: PanelState[], action: PanelAction): PanelState[] {
 
 export function useTrellisPanels(options?: PanelCallbacks): PanelManagerAPI {
 	const [openPanels, dispatch] = useReducer(panelReducer, [])
-	const idCounterRef = useRef(0)
 	const callbacksRef = useRef(options)
 	const openPanelsRef = useRef(openPanels)
 	callbacksRef.current = options
@@ -53,24 +57,30 @@ export function useTrellisPanels(options?: PanelCallbacks): PanelManagerAPI {
 	const open = useCallback((itemIndex: number) => {
 		const existingPanel = openPanelsRef.current.find((panel) => panel.itemIndex === itemIndex)
 		if (existingPanel) {
-			dispatch({ type: 'activate', id: existingPanel.id })
+			globalActivationCounter += 1
+			dispatch({ type: 'activate', id: existingPanel.id, activationOrder: globalActivationCounter })
 			return
 		}
 
-		idCounterRef.current += 1
+		globalIdCounter += 1
+		globalOpenCounter += 1
+		globalActivationCounter += 1
 		dispatch({
 			type: 'open',
 			panel: {
-				id: `panel-${idCounterRef.current}-${itemIndex}`,
+				id: `panel-${globalIdCounter}-${itemIndex}`,
 				itemIndex,
 				pinned: false,
+				globalOpenOrder: globalOpenCounter,
+				activationOrder: globalActivationCounter,
 			},
 		})
 		callbacksRef.current?.onOpen?.(itemIndex)
 	}, [])
 
 	const activate = useCallback((id: string) => {
-		dispatch({ type: 'activate', id })
+		globalActivationCounter += 1
+		dispatch({ type: 'activate', id, activationOrder: globalActivationCounter })
 	}, [])
 
 	const close = useCallback((id: string) => {

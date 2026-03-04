@@ -11,7 +11,7 @@ import {
 	type TrellisMode,
 } from 'react-trellis-gallery'
 
-import { generateItems, type SampleItem } from './sample-items'
+import { COOL_CATEGORIES, generateItems, type SampleItem, WARM_CATEGORIES } from './sample-items'
 
 export type LayoutType = 'auto' | 'manual'
 export type PaginationRenderMode = 'default' | 'custom' | 'hidden'
@@ -26,6 +26,7 @@ export interface PlaygroundControls {
 	itemCount: number
 	containerWidth: number
 	containerHeight: number
+	dualGallery: boolean
 	mode: TrellisMode
 	layoutType: LayoutType
 	minItemWidth: number
@@ -52,6 +53,7 @@ export interface PlaygroundSetters {
 	setItemCount: (value: number) => void
 	setContainerWidth: (value: number) => void
 	setContainerHeight: (value: number) => void
+	setDualGallery: (value: boolean) => void
 	setMode: (value: TrellisMode) => void
 	setLayoutType: (value: LayoutType) => void
 	setMinItemWidth: (value: number) => void
@@ -78,6 +80,8 @@ export interface PlaygroundState {
 	controls: PlaygroundControls
 	setters: PlaygroundSetters
 	items: SampleItem[]
+	topItems: SampleItem[]
+	bottomItems: SampleItem[]
 	layoutConfig: LayoutConfig
 	paginationConfig: PaginationConfig
 	layoutInfo: ReturnType<typeof calculateLayout>
@@ -173,6 +177,7 @@ export function usePlaygroundState(): PlaygroundState {
 	const [itemCount, setItemCount] = useState(24)
 	const [containerWidth, setContainerWidth] = useState(960)
 	const [containerHeight, setContainerHeight] = useState(640)
+	const [dualGallery, setDualGallery] = useState(false)
 	const [mode, setMode] = useState<TrellisMode>('pagination')
 	const [layoutType, setLayoutType] = useState<LayoutType>('auto')
 	const [minItemWidth, setMinItemWidth] = useState(200)
@@ -201,6 +206,7 @@ export function usePlaygroundState(): PlaygroundState {
 			itemCount: clampInt(itemCount, 0, 10000),
 			containerWidth: clampInt(containerWidth, 100, 2000),
 			containerHeight: clampInt(containerHeight, 100, 1500),
+			dualGallery,
 			mode,
 			layoutType,
 			minItemWidth: clampInt(minItemWidth, 1, 1200),
@@ -226,6 +232,7 @@ export function usePlaygroundState(): PlaygroundState {
 			itemCount,
 			containerWidth,
 			containerHeight,
+			dualGallery,
 			mode,
 			layoutType,
 			minItemWidth,
@@ -250,6 +257,16 @@ export function usePlaygroundState(): PlaygroundState {
 	)
 
 	const items = useMemo(() => generateItems(controls.itemCount), [controls.itemCount])
+	const warmCategories = useMemo(() => new Set(WARM_CATEGORIES), [])
+	const coolCategories = useMemo(() => new Set(COOL_CATEGORIES), [])
+	const topItems = useMemo(
+		() => items.filter((item) => warmCategories.has(item.category)),
+		[items, warmCategories],
+	)
+	const bottomItems = useMemo(
+		() => items.filter((item) => coolCategories.has(item.category)),
+		[items, coolCategories],
+	)
 
 	const layoutConfig = useMemo<LayoutConfig>(() => {
 		if (controls.layoutType === 'auto') {
@@ -377,6 +394,7 @@ export function usePlaygroundState(): PlaygroundState {
 			setItemCount,
 			setContainerWidth,
 			setContainerHeight,
+			setDualGallery,
 			setMode,
 			setLayoutType,
 			setMinItemWidth,
@@ -399,6 +417,8 @@ export function usePlaygroundState(): PlaygroundState {
 			setHighlightColor,
 		},
 		items,
+		topItems,
+		bottomItems,
 		layoutConfig,
 		paginationConfig,
 		layoutInfo,

@@ -74,6 +74,10 @@ export interface PanelState {
 	id: string
 	itemIndex: number
 	pinned: boolean
+	/** @internal Global open order used for cross-instance cascade positioning. */
+	globalOpenOrder: number
+	/** @internal Monotonically increasing counter for per-panel z-index ordering. */
+	activationOrder: number
 }
 
 export interface PanelHeaderAPI {

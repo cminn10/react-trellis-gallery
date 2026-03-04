@@ -44,7 +44,9 @@ const metaTextStyle: CSSProperties = {
 	color: 'oklch(0.553 0.013 58.071)',
 }
 
-const categories: SampleItem['category'][] = ['stone', 'marble', 'slate', 'granite', 'quartz']
+export const WARM_CATEGORIES: SampleItem['category'][] = ['stone', 'marble']
+export const COOL_CATEGORIES: SampleItem['category'][] = ['slate', 'granite', 'quartz']
+const categories: SampleItem['category'][] = [...WARM_CATEGORIES, ...COOL_CATEGORIES]
 
 const descriptionFragments = [
 	'Warm neutral tone with subtle texture.',

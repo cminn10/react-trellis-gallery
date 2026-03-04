@@ -1,7 +1,13 @@
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { PANEL_CASCADE_OFFSET, RTG_PANEL_CSS_VARS } from '../core/constants'
+import {
+	MAX_CASCADE_POSITIONS,
+	PANEL_CASCADE_OFFSET,
+	PANEL_Z_BASE,
+	PINNED_PANEL_Z_BASE,
+	RTG_PANEL_CSS_VARS,
+} from '../core/constants'
 import type { FloatingPanelDefaults, PanelHeaderAPI, PanelState, Point } from '../core/types'
 import { FloatingPanel } from './FloatingPanel'
 
@@ -69,21 +75,19 @@ export function PanelLayer<T>({
 		<div
 			ref={layerRef}
 			data-rtg-panel-layer
-			style={{
-				position: 'fixed',
-				inset: 0,
-				pointerEvents: 'none',
-				zIndex: 9999,
-			}}
+			style={{ pointerEvents: 'none' }}
 		>
-			{orderedPanels.map((panel, stackIndex) => {
-				const item = items[panel.itemIndex]
-				if (item === undefined) return null
-				const offset = stackIndex * PANEL_CASCADE_OFFSET
-				const defaultPosition: Point = {
-					x: boundaryRect.x + Math.max(16, (boundaryRect.width - defaults.size.width) / 2) + offset,
-					y: boundaryRect.y + Math.max(16, (boundaryRect.height - defaults.size.height) / 2) + offset,
-				}
+		{orderedPanels.map((panel) => {
+			const item = items[panel.itemIndex]
+			if (item === undefined) return null
+			const offset = ((panel.globalOpenOrder - 1) % MAX_CASCADE_POSITIONS) * PANEL_CASCADE_OFFSET
+			const defaultPosition: Point = {
+				x: boundaryRect.x + Math.max(16, (boundaryRect.width - defaults.size.width) / 2) + offset,
+				y: boundaryRect.y + Math.max(16, (boundaryRect.height - defaults.size.height) / 2) + offset,
+			}
+			const panelZIndex =
+				(panel.pinned ? PINNED_PANEL_Z_BASE : PANEL_Z_BASE) +
+				panel.activationOrder
 
 				return (
 					<FloatingPanel
@@ -103,6 +107,7 @@ export function PanelLayer<T>({
 						renderContent={renderContent}
 						renderHeader={renderHeader}
 						renderTitle={renderTitle}
+						zIndex={panelZIndex}
 					/>
 				)
 			})}

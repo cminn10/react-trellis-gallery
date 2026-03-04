@@ -12,6 +12,7 @@ interface FloatingPanelProps<T> {
 	itemIndex: number
 	panelId: string
 	pinned: boolean
+	zIndex: number
 	defaultSize: Size
 	minSize: Size
 	maxSize?: Size
@@ -88,6 +89,7 @@ function FloatingPanelInner<T>({
 	itemIndex,
 	panelId,
 	pinned,
+	zIndex,
 	defaultSize,
 	minSize,
 	maxSize,
@@ -191,6 +193,7 @@ function FloatingPanelInner<T>({
 			style={{
 				...(positionerProps.style ?? {}),
 				pointerEvents: 'auto',
+				zIndex,
 			}}
 		>
 			<div
@@ -206,8 +209,6 @@ function FloatingPanelInner<T>({
 					overflow: 'hidden',
 				}}
 				onPointerDownCapture={(event) => {
-					// Keep non-pinned panel topmost for click/drag interactions.
-					if (pinned) return
 					onActivate(panelId)
 					event.currentTarget.focus({ preventScroll: true })
 				}}
