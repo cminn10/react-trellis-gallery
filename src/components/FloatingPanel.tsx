@@ -201,6 +201,8 @@ function FloatingPanelInner<T>({
 				style={{
 					...(contentProps.style ?? {}),
 					position: 'relative',
+					display: 'flex',
+					flexDirection: 'column',
 					border: '1px solid var(--rtg-border-color, rgba(0, 0, 0, 0.12))',
 					borderRadius: 'var(--rtg-border-radius, 10px)',
 					background: 'var(--rtg-bg, #ffffff)',
@@ -275,8 +277,9 @@ function FloatingPanelInner<T>({
 					{...bodyProps}
 					style={{
 						...(bodyProps.style ?? {}),
-						width: '100%',
-						height: '100%',
+						flex: 1,
+						minHeight: 0,
+						overflow: 'auto',
 					}}
 				>
 					{renderContent(item, itemIndex)}
