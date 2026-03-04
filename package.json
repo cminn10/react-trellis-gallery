@@ -1,6 +1,6 @@
 {
 	"name": "react-trellis-gallery",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "High-performance trellis/gallery layout for React",
 	"type": "module",
 	"main": "./dist/index.cjs",
