@@ -45,8 +45,8 @@
 		"dev:playground": "bun run --cwd examples/playground dev"
 	},
 	"dependencies": {
-		"@zag-js/floating-panel": "1.35.3",
-		"@zag-js/react": "1.35.3",
+		"@zag-js/floating-panel": "1.37.0",
+		"@zag-js/react": "1.37.0",
 		"react-window": "2.2.7"
 	},
 	"devDependencies": {
